@@ -9,6 +9,7 @@ require_once dirname(__FILE__).'/../classes/class.tapestry-h5p.php';
 require_once dirname(__FILE__).'/../classes/class.constants.php';
 require_once dirname(__FILE__).'/../interfaces/interface.tapestry.php';
 require_once dirname(__FILE__).'/class.constants.php';
+require_once dirname(__FILE__).'/../utilities/class.neptune-helpers.php';
 
 /**
  * TODO: Implement group functionality. Currently all the group-related
@@ -181,10 +182,11 @@ class Tapestry implements ITapestry
 
         if (empty($this->rootId)) {
             $this->rootId = $node->id;
+            $this->addTapestryInNeptune();
         }
 
         $this->_saveToDatabase();
-
+        $this->addNodeInNeptune($node);
         return $node;
     }
 
@@ -205,8 +207,9 @@ class Tapestry implements ITapestry
                 }
             }
             $this->rootId = 0;
+            $this->deleteTapestryInNeptune();
         }
-
+        $this->deleteNodeInNeptune($nodeId);
         // Delete the element from nodes array
         foreach ($this->nodes as $elementId => $element) {
             if ($element == $nodeId) {
@@ -253,7 +256,7 @@ class Tapestry implements ITapestry
     {
         array_push($this->links, $link);
         $this->_saveToDatabase();
-
+        $this->addLinkInNeptune($link);
         return $link;
     }
 
@@ -274,7 +277,7 @@ class Tapestry implements ITapestry
             }
         }
         $this->_saveToDatabase();
-
+        $this->reverseLinkInNeptune($newLink);
         return $this->links;
     }
 
@@ -294,7 +297,7 @@ class Tapestry implements ITapestry
             }
         }
         $this->_saveToDatabase();
-
+        $this->deleteLinkInNeptune($linkToDelete);
         return $this->links;
     }
 
@@ -747,5 +750,66 @@ class Tapestry implements ITapestry
         return TapestryHelpers::userIsAllowed('READ', $node, $this->postId, $superuser_override, $userId)
         || TapestryHelpers::userIsAllowed('ADD', $node, $this->postId, $superuser_override, $userId)
         || TapestryHelpers::userIsAllowed('EDIT', $node, $this->postId, $superuser_override, $userId);
+    }
+
+    // Neptune Functions
+
+    // POST Requests
+
+    private function addTapestryInNeptune(){
+        $data = array(
+            'id' => strval($this->postId),
+            'author' => $this->author,
+            'rootId' => "node-" . strval($this->rootId)
+        );
+        $response = NeptuneHelpers::httpPost("addTapestry",$data);
+        error_log($response);
+    }
+
+    private function addNodeInNeptune($node){
+        $data = array(
+            'id' => "node-" . strval($node->id),
+            'tapestry_id' => strval($this->postId),
+            'title' => $node->title,
+            'coordinates_x' => strval($node->coordinates->x),
+            'coordinates_y' => strval($node->coordinates->y)
+        );
+        $response = NeptuneHelpers::httpPost("addNode",$data);
+        error_log($response);
+    }
+
+    private function addLinkInNeptune($link){
+        $data = array(
+            'from' => "node-" . $link->source,
+            'to' => "node-" . $link->target
+        );
+        $response = NeptuneHelpers::httpPost("addEdge",$data);
+        error_log($response);
+    }
+
+    private function reverseLinkInNeptune($link){
+        $data = array(
+            'from' => "node-" . $link->source,
+            'to' => "node-" . $link->target
+        );
+        $response = NeptuneHelpers::httpPost("reverseEdge",$data);
+        error_log($response);
+    }
+
+    // DELETE Requests
+
+    private function deleteLinkInNeptune($link){
+        $response = NeptuneHelpers::httpDelete("deleteEdge?from=node-" . $link->source . "&to=node-" . $link->target);
+        error_log($response);
+    }
+
+    private function deleteNodeInNeptune($nodeId){
+        $response = NeptuneHelpers::httpDelete("deleteVertex?id=node-" . strval($nodeId));
+        error_log($response);
+    }
+
+    private function deleteTapestryInNeptune(){
+        $response = NeptuneHelpers::httpDelete("deleteVertex?id=" . strval($this->postId));
+        error_log($response);
     }
 }
