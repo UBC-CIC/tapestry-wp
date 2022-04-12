@@ -529,12 +529,13 @@ class Tapestry implements ITapestry
 
     private function _loadFromDatabase()
     {
+        $t = $this->getTapestryFromNeptune(); 
         $tapestry = get_post_meta($this->postId, 'tapestry', true);
+        $t->settings = $tapestry->settings;
         if (empty($tapestry)) {
             return $this->_getDefaultTapestry();
         }
-
-        return $tapestry;
+        return $t;
     }
 
     private function _getDefaultTapestry()
@@ -811,5 +812,17 @@ class Tapestry implements ITapestry
     private function deleteTapestryInNeptune(){
         $response = NeptuneHelpers::httpDelete("deleteVertex?id=" . strval($this->postId));
         error_log($response);
+    }
+
+    // GET Requests
+
+    private function getTapestryFromNeptune(){
+        $response = NeptuneHelpers::httpGet("getTapestryNodes?id=" . strval($this->postId));
+        $response = stripslashes(html_entity_decode($response));
+        $tapestry = json_decode($response);
+        NeptuneHelpers::convertNodesToInt($tapestry->nodes);
+        NeptuneHelpers::convertLinksToInt($tapestry->links);
+        error_log(json_encode($tapestry));
+        return $tapestry;
     }
 }

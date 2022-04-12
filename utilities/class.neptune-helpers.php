@@ -59,6 +59,29 @@ class NeptuneHelpers
         curl_close($curl);
         return $response;
     }
-    
 
+    /**
+     * Convert array of node IDs from string IDs to int IDs (MUTATES the original array)
+     * 
+     * @param $nodes Array of node IDs
+     */
+
+    public static function convertNodesToInt(&$nodes){
+        for($i = 0; $i<count($nodes); $i++){
+            $nodes[$i] = intval($nodes[$i]);
+        }
+    }
+
+    /**
+     * Convert array of links from string IDs to int IDs (MUTATES the original array)
+     * 
+     * @param $links Array of node IDs
+     */
+
+    public static function convertLinksToInt(&$links){
+        for($i = 0; $i<count($links); $i++){
+            $links[$i]->source = intval($links[$i]->source);
+            $links[$i]->target = intval($links[$i]->target);
+        }
+    }
 }
