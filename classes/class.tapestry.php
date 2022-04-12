@@ -820,6 +820,7 @@ class Tapestry implements ITapestry
         $response = NeptuneHelpers::httpGet("getTapestryNodes?id=" . strval($this->postId));
         $response = stripslashes(html_entity_decode($response));
         $tapestry = json_decode($response);
+        $tapestry->rootId = intval($tapestry->rootId);
         NeptuneHelpers::convertNodesToInt($tapestry->nodes);
         NeptuneHelpers::convertLinksToInt($tapestry->links);
         error_log(json_encode($tapestry));
