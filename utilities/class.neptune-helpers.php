@@ -39,6 +39,20 @@ class NeptuneHelpers
         return file_get_contents(self::NEPTUNE_API_URL . $url);
     }
 
+    /*
+    public static function httpHead($url)
+    {
+        $curl = curl_init(self::NEPTUNE_API_URL . $url);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "HEAD");
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        $response = curl_exec($curl);
+        return curl_getinfo($curl,CURLINFO_HTTP_CODE);
+        curl_close($curl);
+    }
+
+    */
+
     /**
     * Make a HTTP DELETE request to Neptune APIs.
     *

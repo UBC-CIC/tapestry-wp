@@ -219,16 +219,8 @@ class Tapestry implements ITapestry
                 $tapestryNode->deleteNode();
             }
         }
-
-        // Delete associated links with this node
-        foreach ($this->links as $index => $link) {
-            if ($link->source == $nodeId || $link->target == $nodeId) {
-                $this->removeLink([
-                    'source' => $link->source,
-                    'target' => $link->target,
-                    ]);
-            }
-        }
+        
+        //$this->set($this->_loadFromDatabase());
 
         // Delete condition from nodes that rely on this node
         foreach ($this->nodes as $index => $id) {
@@ -529,6 +521,7 @@ class Tapestry implements ITapestry
 
     private function _loadFromDatabase()
     {
+        error_log("Called");
         $t = $this->getTapestryFromNeptune(); 
         $tapestry = get_post_meta($this->postId, 'tapestry', true);
         $t->settings = $tapestry->settings;

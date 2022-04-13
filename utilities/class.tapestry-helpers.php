@@ -1,6 +1,8 @@
 <?php
 
 require_once dirname(__FILE__).'/class.tapestry-node-permissions.php';
+require_once dirname(__FILE__).'/class.neptune-helpers.php';
+
 
 /**
  * Tapestry Helper Functions.
@@ -21,7 +23,7 @@ class TapestryHelpers
      */
     public static function isValidTapestry($postId)
     {
-        return is_numeric($postId) && 'tapestry' == get_post_type($postId);
+        return is_numeric($postId) && json_decode(NeptuneHelpers::httpGet("isValidTapestry?id=" . strval($postId))) == "true";
     }
 
     /**
@@ -33,15 +35,10 @@ class TapestryHelpers
      */
     public static function isValidTapestryNode($nodeMetaId)
     {
+        error_log("Called2");
         if (is_numeric($nodeMetaId)) {
-            $nodeMetadata = get_metadata_by_mid('post', $nodeMetaId);
-            if ((!empty($nodeMetadata->meta_value))
-                && (!empty($nodeMetadata->meta_value->post_id))
-            ) {
-                $nodePostId = $nodeMetadata->meta_value->post_id;
-
-                return 'tapestry_node' == get_post_type($nodePostId);
-            }
+            $response = json_decode(NeptuneHelpers::httpGet("isValidTapestryNode?id=node-" . strval($nodeMetaId))) == "true";
+            return $response;
         }
 
         return false;
@@ -54,7 +51,7 @@ class TapestryHelpers
      *
      * @return bool
      */
-    public static function isValidTapestryGroup($groupMetaId)
+    /*public static function isValidTapestryGroup($groupMetaId)
     {
         if (is_numeric($groupMetaId)) {
             $groupMetadata = get_metadata_by_mid('post', $groupMetaId);
@@ -65,6 +62,7 @@ class TapestryHelpers
 
         return false;
     }
+    */
 
     /**
      * Check if the node is a child of a tapestry.
@@ -76,10 +74,11 @@ class TapestryHelpers
      */
     public static function isChildNodeOfTapestry($nodeMetaId, $tapestryPostId)
     {
-        if (is_numeric($nodeMetaId) && self::isValidTapestry($tapestryPostId)) {
-            $tapestry = get_post_meta($tapestryPostId, 'tapestry', true);
-
-            return in_array($nodeMetaId, $tapestry->nodes);
+        error_log("Called1");
+        if (is_numeric($nodeMetaId) && is_numeric($tapestryPostId)) {
+            return json_decode(NeptuneHelpers::httpGet(
+                "isChildNodeOfTapestry?nodeId=node-" . strval($nodeMetaId) . "&tapestryId=" . strval($tapestryPostId)))
+                == "true";
         }
 
         return false;
