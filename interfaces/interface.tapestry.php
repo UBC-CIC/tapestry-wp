@@ -17,7 +17,7 @@ interface ITapestry
      *
      * @return object $tapestry
      */
-    public function saveOnPublish();
+    //public function saveOnPublish();
 
     /**
      * Set Tapestry.

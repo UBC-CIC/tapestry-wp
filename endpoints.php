@@ -777,7 +777,7 @@ function updateTapestrySettings($request)
         $tapestry = new Tapestry($postId);
         $tapestry->set((object) ['settings' => $settings]);
 
-        return $tapestry->save();
+        return $tapestry->saveSettings();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
     }

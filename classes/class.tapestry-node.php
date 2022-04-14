@@ -5,6 +5,7 @@ require_once dirname(__FILE__).'/../utilities/class.tapestry-helpers.php';
 require_once dirname(__FILE__).'/../interfaces/interface.tapestry-node.php';
 require_once dirname(__FILE__).'/../classes/class.tapestry-user-progress.php';
 require_once dirname(__FILE__).'/../classes/class.constants.php';
+require_once dirname(__FILE__).'/../utilities/class.neptune-helpers.php';
 
 /**
  * Add/update/retrieve Tapestry post and its child nodes.

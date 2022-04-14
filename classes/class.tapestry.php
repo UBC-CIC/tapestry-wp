@@ -70,17 +70,19 @@ class Tapestry implements ITapestry
         return $this->_saveToDatabase();
     }
 
-    /**
-     * Save the Tapestry automatically on publish.
-     *
-     * @return object $tapestry
-     */
-    public function saveOnPublish()
-    {
-        $this->updateTapestryPost = false;
 
-        return $this->_saveToDatabase();
-    }
+    /**
+     * Save tapestry settings on the relational database
+     * 
+     * @return object $settings
+     */
+
+     public function saveSettings()
+     {
+        update_post_meta($this->postId, 'tapestry_settings', $this->settings);
+        error_log("Updated Tapestry Settings!");
+        return $this->setiings;
+     }
 
     /**
      * Set Tapestry.
@@ -178,14 +180,12 @@ class Tapestry implements ITapestry
         $tapestryNode->set($node);
         $node = $tapestryNode->save($node);
 
-        array_push($this->nodes, $node->id);
 
         if (empty($this->rootId)) {
             $this->rootId = $node->id;
             $this->addTapestryInNeptune();
         }
-
-        $this->_saveToDatabase();
+        error_log(json_encode($node));
         $this->addNodeInNeptune($node);
         return $node;
     }
@@ -210,17 +210,8 @@ class Tapestry implements ITapestry
             $this->deleteTapestryInNeptune();
         }
         $this->deleteNodeInNeptune($nodeId);
-        // Delete the element from nodes array
-        foreach ($this->nodes as $elementId => $element) {
-            if ($element == $nodeId) {
-                array_splice($this->nodes, $elementId, 1);
-                // Delete node from database
-                $tapestryNode = new TapestryNode($this->postId, $nodeId);
-                $tapestryNode->deleteNode();
-            }
-        }
         
-        //$this->set($this->_loadFromDatabase());
+        $this->set($this->_loadFromDatabase());
 
         // Delete condition from nodes that rely on this node
         foreach ($this->nodes as $index => $id) {
@@ -230,10 +221,6 @@ class Tapestry implements ITapestry
                 $elementNode->removeConditionsById($nodeId);
             }
         }
-
-        $tapestry = $this->_formTapestry();
-        update_post_meta($this->postId, 'tapestry', $tapestry);
-
         return $this->nodes;
     }
 
@@ -247,7 +234,6 @@ class Tapestry implements ITapestry
     public function addLink($link)
     {
         array_push($this->links, $link);
-        $this->_saveToDatabase();
         $this->addLinkInNeptune($link);
         return $link;
     }
@@ -268,7 +254,6 @@ class Tapestry implements ITapestry
                 break;
             }
         }
-        $this->_saveToDatabase();
         $this->reverseLinkInNeptune($newLink);
         return $this->links;
     }
@@ -288,7 +273,6 @@ class Tapestry implements ITapestry
                 break;
             }
         }
-        $this->_saveToDatabase();
         $this->deleteLinkInNeptune($linkToDelete);
         return $this->links;
     }
@@ -522,13 +506,13 @@ class Tapestry implements ITapestry
     private function _loadFromDatabase()
     {
         error_log("Called");
-        $t = $this->getTapestryFromNeptune(); 
-        $tapestry = get_post_meta($this->postId, 'tapestry', true);
-        $t->settings = $tapestry->settings;
+        $tapestry = $this->getTapestryFromNeptune(); 
+        $settings = get_post_meta($this->postId, 'tapestry_settings', true);
+        $tapestry->settings = $settings;
         if (empty($tapestry)) {
             return $this->_getDefaultTapestry();
         }
-        return $t;
+        return $tapestry;
     }
 
     private function _getDefaultTapestry()
@@ -584,15 +568,6 @@ class Tapestry implements ITapestry
             'settings' => $this->settings,
             'rootId' => $this->rootId,
         ];
-    }
-
-    private function _saveToDatabase()
-    {
-        $tapestry = $this->_formTapestry();
-
-        update_post_meta($this->postId, 'tapestry', $tapestry);
-
-        return $tapestry;
     }
 
     private function _resetAuthor()
@@ -761,12 +736,22 @@ class Tapestry implements ITapestry
     }
 
     private function addNodeInNeptune($node){
+        $nodeData = array();
+        // Listing the keys to avoid sending to graph database
+        $keyExclusion = array("id","postId","author","title","coordinates","typeData","permissions","license","mapCoordinates",
+        "conditions","childOrdering","reviewComments"); 
+        foreach($node as $key => $value){
+            if(!in_array($key,$keyExclusion)){
+                $nodeData[$key] = $value;
+            }
+        }
         $data = array(
             'id' => "node-" . strval($node->id),
             'tapestry_id' => strval($this->postId),
             'title' => $node->title,
             'coordinates_x' => strval($node->coordinates->x),
-            'coordinates_y' => strval($node->coordinates->y)
+            'coordinates_y' => strval($node->coordinates->y),
+            'nodeData' => $nodeData
         );
         $response = NeptuneHelpers::httpPost("addNode",$data);
         error_log($response);
@@ -816,7 +801,6 @@ class Tapestry implements ITapestry
         $tapestry->rootId = intval($tapestry->rootId);
         NeptuneHelpers::convertNodesToInt($tapestry->nodes);
         NeptuneHelpers::convertLinksToInt($tapestry->links);
-        error_log(json_encode($tapestry));
         return $tapestry;
     }
 }
