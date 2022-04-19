@@ -493,7 +493,11 @@ function importTapestry($postId, $tapestryData)
         $idMap = new stdClass();
 
         // Construct ID map and add nodes to new Tapestry
+        $numNodes = count($tapestryData->nodes);
+        $i = 0;
         foreach ($tapestryData->nodes as $node) {
+            $i++;
+            error_log("Nodes: " . $i . "/" . $numNodes);
             $oldNodeId = $node->id;
             $newNode = $tapestry->addNode($node);
             $newNodeId = $newNode->id;
@@ -519,8 +523,11 @@ function importTapestry($postId, $tapestryData)
             $tapestryNode->set($node);
             $tapestryNode->save();
         }
-
+        $numLinks = count($tapestryData->links);
+        $i = 0;
         foreach ($tapestryData->links as $link) {
+            $i++;
+            error_log("Edges: " . $i . "/" . $numLinks);
             $oldSource = $link->source;
             $oldTarget = $link->target;
 
@@ -531,7 +538,7 @@ function importTapestry($postId, $tapestryData)
         }
     }
 
-    return $tapestry->save();
+    return $tapestry->saveSettings();
 }
 
 

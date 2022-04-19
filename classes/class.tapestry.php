@@ -732,11 +732,12 @@ class Tapestry implements ITapestry
             'rootId' => "node-" . strval($this->rootId)
         );
         $response = NeptuneHelpers::httpPost("addTapestry",$data);
+        error_log("Add Tapestry");
         error_log($response);
     }
 
     private function addNodeInNeptune($node){
-        $nodeData = array();
+        /*$nodeData = array();
         // Listing the keys to avoid sending to graph database
         $keyExclusion = array("id","postId","author","title","coordinates","typeData","permissions","license","mapCoordinates",
         "conditions","childOrdering","reviewComments"); 
@@ -744,16 +745,17 @@ class Tapestry implements ITapestry
             if(!in_array($key,$keyExclusion)){
                 $nodeData[$key] = $value;
             }
-        }
+        }*/
         $data = array(
             'id' => "node-" . strval($node->id),
             'tapestry_id' => strval($this->postId),
             'title' => $node->title,
             'coordinates_x' => strval($node->coordinates->x),
-            'coordinates_y' => strval($node->coordinates->y),
-            'nodeData' => $nodeData
+            'coordinates_y' => strval($node->coordinates->y)
+            //'nodeData' => $nodeData
         );
         $response = NeptuneHelpers::httpPost("addNode",$data);
+        error_log("Add Node");
         error_log($response);
     }
 
@@ -763,6 +765,7 @@ class Tapestry implements ITapestry
             'to' => "node-" . $link->target
         );
         $response = NeptuneHelpers::httpPost("addEdge",$data);
+        error_log("Add Link");
         error_log($response);
     }
 
@@ -772,6 +775,7 @@ class Tapestry implements ITapestry
             'to' => "node-" . $link->target
         );
         $response = NeptuneHelpers::httpPost("reverseEdge",$data);
+        error_log("Reverse Link");
         error_log($response);
     }
 
