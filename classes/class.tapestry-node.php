@@ -54,10 +54,13 @@ class TapestryNode implements ITapestryNode
      *
      * @param Number $tapestryPostId tapestry post ID
      * @param Number $nodeMetaId     node meta ID
-     *
+     * @param Boolean $bulkLoad      set to true if $metaData and $nodeData present (allows usage of these to initialize nodes instead of querying the database repeatedly)
+     * @param Object $metaData       maps node Id to metadata
+     * @param Object $nodeData       maps node Id to node data
+     * 
      * @return null
      */
-    public function __construct($tapestryPostId = 0, $nodeMetaId = 0)
+    public function __construct($tapestryPostId = 0, $nodeMetaId = 0, $bulkLoad = false, $metaData = [], $nodeData = [])
     {
         $this->tapestryPostId = (int) $tapestryPostId;
         $this->nodePostId = 0;
@@ -102,7 +105,13 @@ class TapestryNode implements ITapestryNode
         $this->popup = null;
 
         if (TapestryHelpers::isValidTapestryNode($this->nodeMetaId)) {
-            $node = $this->_loadFromDatabase();
+            if($bulkLoad){
+                $node = $this->_formNodeData($nodeData,$metaData);
+            }
+            else
+            {
+                $node = $this->_loadFromDatabase();
+            }
             $this->set($node);
             $this->author = $this->_getAuthorInfo(get_post_field('post_author', $this->nodePostId));
         }
@@ -493,11 +502,10 @@ class TapestryNode implements ITapestryNode
             $this->nodeMetaId = add_post_meta($this->tapestryPostId, 'tapestry_node', $nodeMetadata);
             $node->id = $this->nodeMetaId;
         }
-
+        $node->postId = $nodePostId;
         // TODO: add a check permission to see if the user is allowed to edit
         // the "original" node data
         update_post_meta($nodePostId, 'tapestry_node_data', $node);
-
         $this->_resetAuthor();
 
         return $node;
@@ -518,7 +526,6 @@ class TapestryNode implements ITapestryNode
         if (empty($nodeMetadata)) {
             return (object) [];
         }
-
         $nodePostId = $nodeMetadata->meta_value->post_id;
         $this->nodePostId = $nodePostId;
 
@@ -650,4 +657,5 @@ class TapestryNode implements ITapestryNode
             ];
         }
     }
+
 }

@@ -401,12 +401,13 @@ function getAllH5P()
  */
 function getTapestry($request)
 {
+    $start = microtime(true);
     $postId = $request['tapestryPostId'];
     $filterUserId = $request['filter_user_id'];
     try {
         $tapestry = new Tapestry($postId);
         $data = $tapestry->get($filterUserId);
-
+        error_log("Time Taken GET: " . (microtime(true)-$start));
         return $data;
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -559,6 +560,7 @@ function deleteTapestry($request)
  */
 function addTapestryNode($request)
 {
+    $start = microtime(true);
     $postId = $request['tapestryPostId'];
     $node = json_decode($request->get_body());
     // TODO: JSON validations should happen here
@@ -576,8 +578,9 @@ function addTapestryNode($request)
                 throw new TapestryError('ADD_NODE_PERMISSION_DENIED');
             }
         }
-
-        return $tapestry->addNode($node);
+        $retval = $tapestry->addNode($node);
+        error_log("Time Elapsed ADD NODE: " . (microtime(true)-$start));
+        return $retval;
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
     }

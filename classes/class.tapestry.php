@@ -10,6 +10,7 @@ require_once dirname(__FILE__).'/../classes/class.constants.php';
 require_once dirname(__FILE__).'/../interfaces/interface.tapestry.php';
 require_once dirname(__FILE__).'/class.constants.php';
 require_once dirname(__FILE__).'/../utilities/class.neptune-helpers.php';
+require_once dirname(__FILE__).'/../utilities/class.sql-helpers.php';
 
 /**
  * TODO: Implement group functionality. Currently all the group-related
@@ -28,7 +29,7 @@ class Tapestry implements ITapestry
     private $settings;
     private $rootId;
     private $nodes;
-
+    private $dataPostIds;
     private $nodeObjects; // Used only in the set up so we don't have to retrieve the nodes from the db multiple times
     private $visitedNodeIds; // Used in _recursivelySetAccessible function
 
@@ -51,6 +52,7 @@ class Tapestry implements ITapestry
         // $this->groups = [];
         $this->rootId = 0;
         $this->settings = $this->_getDefaultSettings();
+        $this->dataPostIds = [];
 
         if (TapestryHelpers::isValidTapestry($this->postId)) {
             $tapestry = $this->_loadFromDatabase();
@@ -115,6 +117,9 @@ class Tapestry implements ITapestry
                 $this->settings->submitNodesEnabled = true;
             }
         }
+        if (isset($tapestry->dataPostIds)){
+            $this->dataPostIds = $tapestry->dataPostIds;
+        }
     }
 
     /**
@@ -124,10 +129,10 @@ class Tapestry implements ITapestry
      */
     public function get($filterUserId = -1)
     {
+
         if (!$this->postId) {
             throw new TapestryError('INVALID_POST_ID');
         }
-
         return $this->_getTapestry($filterUserId);
     }
 
@@ -185,7 +190,6 @@ class Tapestry implements ITapestry
             $this->rootId = $node->id;
             $this->addTapestryInNeptune();
         }
-        error_log(json_encode($node));
         $this->addNodeInNeptune($node);
         return $node;
     }
@@ -211,7 +215,6 @@ class Tapestry implements ITapestry
         }
         $this->deleteNodeInNeptune($nodeId);
         
-        $this->set($this->_loadFromDatabase());
 
         // Delete condition from nodes that rely on this node
         foreach ($this->nodes as $index => $id) {
@@ -505,7 +508,6 @@ class Tapestry implements ITapestry
 
     private function _loadFromDatabase()
     {
-        error_log("Called");
         $tapestry = $this->getTapestryFromNeptune(); 
         $settings = get_post_meta($this->postId, 'tapestry_settings', true);
         $tapestry->settings = $settings;
@@ -581,20 +583,37 @@ class Tapestry implements ITapestry
     private function _getTapestry($filterUserId)
     {
         // Get all the nodes from the database (we will need this info and only want to do it once)
+        $start = microtime(true);
+        
+        /*
         foreach ($this->nodes as $nodeId) {
             $this->nodeObjects[$nodeId] = new TapestryNode($this->postId, $nodeId);
         }
-
+        */
+        
+        $dataMap = SqlHelpers::bulkLoadNodesData($this->dataPostIds);
+        $metaMap = SqlHelpers::bulkLoadNodesMetaData($this->nodes);
+        foreach($this->nodes as $nodeId){
+            $tapestryNode = new TapestryNode($this->postId,$nodeId,true,$metaMap[strval($nodeId)],$dataMap[strval($nodeId)]);
+            $this->nodeObjects[$nodeId] = $tapestryNode;
+        }
+        
+        error_log("1: " . (microtime(true)-$start));
+        $start = microtime(true);
         $tapestry = $this->_filterTapestry($this->_formTapestry(), $filterUserId);
-
+        error_log("2: " . (microtime(true)-$start));
+        $start = microtime(true);
         $nodeIds = $tapestry->nodes;
 
         $this->nodeObjects = array_filter($this->nodeObjects, function ($nodeId) use ($nodeIds) {
             return in_array($nodeId, $nodeIds);
         }, ARRAY_FILTER_USE_KEY);
 
+        error_log("3: " . (microtime(true)-$start));
+        $start = microtime(true);
         $tapestry->nodes = $this->getNodesDataForRender();
-
+        error_log("4: " . (microtime(true)-$start));
+        $start = microtime(true);
         // $tapestry->groups = array_map(
         //     function ($groupMetaId) {
         //         $tapestryGroup = new TapestryGroup($this->postId, $groupMetaId);
@@ -606,7 +625,7 @@ class Tapestry implements ITapestry
 
         $userProgress = new TapestryUserProgress($this->postId);
         $tapestry->userProgress = $userProgress->get($tapestry);
-
+        error_log("5: " . (microtime(true)-$start));    
         return $tapestry;
     }
 
@@ -751,7 +770,8 @@ class Tapestry implements ITapestry
             'tapestry_id' => strval($this->postId),
             'title' => $node->title,
             'coordinates_x' => strval($node->coordinates->x),
-            'coordinates_y' => strval($node->coordinates->y)
+            'coordinates_y' => strval($node->coordinates->y),
+            'data_post_id' => strval($node->postId)
             //'nodeData' => $nodeData
         );
         $response = NeptuneHelpers::httpPost("addNode",$data);
@@ -802,9 +822,11 @@ class Tapestry implements ITapestry
         $response = NeptuneHelpers::httpGet("getTapestryNodes?id=" . strval($this->postId));
         $response = stripslashes(html_entity_decode($response));
         $tapestry = json_decode($response);
+        error_log(count($tapestry->nodes));
         $tapestry->rootId = intval($tapestry->rootId);
         NeptuneHelpers::convertNodesToInt($tapestry->nodes);
         NeptuneHelpers::convertLinksToInt($tapestry->links);
+        $tapestry->dataPostIds = NeptuneHelpers::convertPostIdsToInt($tapestry->dataPostIds);
         return $tapestry;
     }
 }

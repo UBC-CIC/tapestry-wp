@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__.'/classes/class.tapestry-analytics.php';
+require_once __DIR__.'/utilities/class.neptune-helpers.php';
 
 /**
  * Plugin Name: Tapestry
@@ -329,4 +330,18 @@ function tapestry_tool_log_event()
     $analytics->log($_POST);
 
     wp_die();
+}
+
+
+// Code for AWS Neptune - Adds a user node in the graph database if it doesn't already exist
+
+add_action('wp_login','loginTapestry',10,2);
+
+function loginTapestry($username,$user){
+    error_log("User logged in : " . json_encode($user->ID));
+    $data = array(
+        'id' => strval($user->ID)
+    );
+    $response = NeptuneHelpers::httpPost("addUser",$data);
+    error_log($response);
 }

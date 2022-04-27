@@ -16,6 +16,7 @@ class NeptuneHelpers
     */
     public static function httpPost($url, $data)
     {
+        $start = microtime(true);
         $curl = curl_init(self::NEPTUNE_API_URL . $url);
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
@@ -24,6 +25,7 @@ class NeptuneHelpers
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
         $response = curl_exec($curl);
         curl_close($curl);
+        error_log("POST " . $url . " " . (microtime(true)-$start));
         return $response;
     }
 
@@ -36,7 +38,10 @@ class NeptuneHelpers
      */
     public static function httpGet($url)
     {
-        return file_get_contents(self::NEPTUNE_API_URL . $url);
+        $start = microtime(true);
+        $contents = file_get_contents(self::NEPTUNE_API_URL . $url);
+        error_log("GET " . $url . " " . (microtime(true)-$start));
+        return $contents;
     }
 
     /*
@@ -65,12 +70,14 @@ class NeptuneHelpers
 
     public static function httpDelete($url)
     {
+        $start = microtime(true);
         $curl = curl_init(self::NEPTUNE_API_URL . $url);
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
         $response = curl_exec($curl);
         curl_close($curl);
+        error_log("DELETE " . $url . " " . (microtime(true)-$start));
         return $response;
     }
 
@@ -97,5 +104,19 @@ class NeptuneHelpers
             $links[$i]->source = intval($links[$i]->source);
             $links[$i]->target = intval($links[$i]->target);
         }
+    }
+
+    /**
+     * Converts array that maps postId (string) -> postId (string) to postId (string) -> postId (int)
+     * 
+     * @param $links Array of node IDs
+     */
+
+    public static function convertPostIdsToInt($postIds){
+        $intArray = [];
+        foreach($postIds as $key=>$value){
+            $intArray[$key] = intval($value);
+        }
+        return $intArray;
     }
 }
