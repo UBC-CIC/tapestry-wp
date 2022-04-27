@@ -765,14 +765,16 @@ class Tapestry implements ITapestry
                 $nodeData[$key] = $value;
             }
         }*/
+
+        error_log("This " . json_encode($test_obj) . "to this -> " . base64_encode(json_encode($test_obj)));
         $data = array(
             'id' => "node-" . strval($node->id),
             'tapestry_id' => strval($this->postId),
+            'user_id' => strval(get_current_user_id()),
             'title' => $node->title,
             'coordinates_x' => strval($node->coordinates->x),
             'coordinates_y' => strval($node->coordinates->y),
             'data_post_id' => strval($node->postId)
-            //'nodeData' => $nodeData
         );
         $response = NeptuneHelpers::httpPost("addNode",$data);
         error_log("Add Node");
