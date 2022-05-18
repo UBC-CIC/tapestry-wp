@@ -231,7 +231,6 @@ class TapestryUserProgress implements ITapestryUserProgress
             $nodeId = $node->id;
 
             $userId = $this->_userId;
-
             $progress_value = get_user_meta($userId, 'tapestry_'.$this->postId.'_progress_node_'.$nodeId, true);
             $progress->$nodeId = new stdClass();
             if (null !== $progress_value) {
@@ -270,7 +269,6 @@ class TapestryUserProgress implements ITapestryUserProgress
             $completed_value = $this->isCompleted($nodeId, $userId);
             $progress->$nodeId->completed = $completed_value;
         }
-
         return $progress;
     }
 

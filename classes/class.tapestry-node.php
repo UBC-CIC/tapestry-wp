@@ -60,7 +60,7 @@ class TapestryNode implements ITapestryNode
      * 
      * @return null
      */
-    public function __construct($tapestryPostId = 0, $nodeMetaId = 0, $bulkLoad = false, $metaData = [], $nodeData = [])
+    public function __construct($tapestryPostId = 0, $nodeMetaId = 0, $neptuneLoad = false)
     {
         $this->tapestryPostId = (int) $tapestryPostId;
         $this->nodePostId = 0;
@@ -105,14 +105,10 @@ class TapestryNode implements ITapestryNode
         $this->popup = null;
 
         if (TapestryHelpers::isValidTapestryNode($this->nodeMetaId)) {
-            if($bulkLoad){
-                $node = $this->_formNodeData($nodeData,$metaData);
-            }
-            else
-            {
+            if(!$neptuneLoad){
                 $node = $this->_loadFromDatabase();
+                $this->set($node);
             }
-            $this->set($node);
             $this->author = $this->_getAuthorInfo(get_post_field('post_author', $this->nodePostId));
         }
     }
@@ -123,7 +119,7 @@ class TapestryNode implements ITapestryNode
      * @return object $node
      */
     public function save()
-    {
+    {   
         return $this->_saveToDatabase();
     }
 

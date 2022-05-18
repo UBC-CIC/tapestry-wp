@@ -1,5 +1,7 @@
 <?php
 
+require_once dirname(__FILE__).'/../classes/class.tapestry-node.php';
+
 class NeptuneHelpers
 {
     const NEPTUNE_API_URL = 'https://qqj4bz0cg9.execute-api.ca-central-1.amazonaws.com/default/';
@@ -40,8 +42,32 @@ class NeptuneHelpers
     {
         $start = microtime(true);
         $contents = file_get_contents(self::NEPTUNE_API_URL . $url);
+        error_log(json_encode(debug_backtrace()));
         error_log("GET " . $url . " " . (microtime(true)-$start));
         return $contents;
+    }
+
+    public static function multiHttpGet($urls)
+    {
+        $curls = array();
+        $mh = curl_multi_init();
+        for($i = 0; $i<count($urls); $i++){
+            $curls[$i] = curl_init(self::NEPTUNE_API_URL . $urls[$i]);
+            curl_setopt($curls[$i], CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curls[$i], CURLOPT_SSL_VERIFYPEER, 0);
+            curl_multi_add_handle($mh,$curls[$i]);
+        }
+        $active = null;
+        do {
+            $status = curl_multi_exec($mh, $active);
+        } while ($active > 0);
+        $responses = array();
+        for($i = 0; $i<count($urls); $i++){
+            $responses[$i] = curl_multi_getcontent($curls[$i]);
+            curl_multi_remove_handle($mh,$curls[$i]);
+        }
+        curl_multi_close($mh);
+        return $responses;
     }
 
     /*
@@ -118,5 +144,61 @@ class NeptuneHelpers
             $intArray[$key] = intval($value);
         }
         return $intArray;
+    }
+
+    
+    public static function convertObjectsToArr($nodeObjects,$tapestryPostId){
+        $nodeArray = [];
+        foreach($nodeObjects as $key=>$value){
+            self::sanitizeNodeObject($value,$key);
+            //$node = new TapestryNode($tapestryPostId,intval($key),true);
+            //$node->set($value);
+            $nodeArray[intval($key)] = $value;
+        }
+        return $nodeArray;
+    }
+
+    private static function sanitizeNodeObject(&$object,$key){
+        $object->id = intval($key);
+        $object->fitWindow = $object->fitWindow[0] == 'true';
+        $object->lockedImageURL = $object->lockedImageURL[0];
+        $object->description = base64_decode($object->description[0]);
+        $object->mediaFormat = $object->mediaFormat[0];
+        $object->type = $object->type[0];
+        $object->title = $object->title[0];
+        $object->presentationStyle = $object->presentationsStyle[0];
+        $object->permissions = json_decode(base64_decode($object->permissions[0]));
+        $object->imageURL = $object->imageURL[0];
+        $object->hideProgress = $object->hideProgress[0] == "true";
+        $object->coordinates = (object) array("x" => floatval($object->coordinates_x[0]), "y" => floatval($object->coordinates_y[0]));
+        $object->hideMedia = $object->hideMedia[0] == "true";
+        $object->backgroundColor = $object->backgroundColor[0];
+        $object->author = json_decode(base64_decode($object->author[0]));
+        $object->mediaType = $object->mediaType[0];
+        $object->skippable = $object->skippable[0] == "true";
+        $object->textColor = $object->textColor[0];
+        if (property_exists($object, 'popup')) {
+            $object->popup = $object->popup[0];
+        }
+        $object->size = $object->size[0];
+        $object->fullscreen = $object->fullscreen[0] == "true";
+        $object->hideTitle = $object->hideTitle[0] == "true";
+        $object->lockedThumbnailFileId = $object->lockedThumbnailFileId[0];
+        $object->mediaDuration = intval($object->mediaDuration[0]);
+        $object->behaviour = $object->behaviour[0];
+        $object->reviewStatus = $object->reviewStatus[0];
+        $object->data_post_id = intval($object->data_post_id[0]);
+        $object->conditions = json_decode(base64_decode($object->conditions[0]));
+        $object->thumbnailFileId = $object->thumbnailFileId[0];
+        $object->status = $object->status[0];
+        if (property_exists($object, 'mapCoordinates_lat')) {
+            $object->mapCoordinates = (object) array("lat" => floatval($object->mapCoordinates_lat[0]), "lng" => floatval($object->mapCoordinates_lng[0]));
+        }
+        $object->unlocked = true;
+        $object->accessible = true;
+        $object->typeData = new stdClass();
+        $object->childOrdering = array_map(function ($n) {
+            return intval($n);
+        },json_decode(base64_decode($object->childOrdering[0])));
     }
 }

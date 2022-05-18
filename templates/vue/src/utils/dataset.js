@@ -36,9 +36,7 @@ function parseToStore(dataset) {
   const store = {
     ...dataset,
   }
-
   if (!Array.isArray(dataset.nodes)) dataset.nodes = Object.values(dataset.nodes)
-
   for (const node of dataset.nodes) {
     const { imageURL, lockedImageURL } = node
     const { mediaURL } = node.typeData
@@ -140,6 +138,7 @@ function setDatasetProgress(dataset, progress) {
 }
 
 function initializeOrdering(state, node) {
+  console.log(node)
   getChildIds(state, node.id)
     .filter(cid => !node.childOrdering.includes(cid))
     .forEach(id => node.childOrdering.push(id))

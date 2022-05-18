@@ -12,6 +12,7 @@ require_once __DIR__.'/classes/class.tapestry-audio.php';
 require_once __DIR__.'/classes/class.tapestry-h5p.php';
 require_once __DIR__.'/classes/class.constants.php';
 require_once __DIR__.'/utilities/class.tapestry-user.php';
+require_once __DIR__.'/utilities/class.neptune-helpers.php';
 
 $REST_API_NAMESPACE = 'tapestry-tool/v1';
 
@@ -824,12 +825,49 @@ function updateTapestryNode($request)
             !TapestryHelpers::nodeNeighbourIsPublished($nodeMetaId, $postId)) {
             throw new TapestryError('NODE_APPROVAL_DENIED');
         }
-
+        // Prevent $nodeData containing null values to make updates
+            
         $tapestry = new Tapestry($postId);
         $node = $tapestry->getNode($nodeMetaId);
-
+        
         $node->set((object) $nodeData);
 
+        if($nodeData->mediaType == null){
+            return $node->get();
+        }
+
+        // Update in Neptune
+        $data = array(
+            "id" => "node-" . $nodeMetaId,
+            "tapestry_id" => strval($postId),
+            "author" => base64_encode(json_encode($nodeData->author)),
+            "conditions" => base64_encode(json_encode($nodeData->conditions)),
+            "type" => $nodeData->type,
+            "size" => strval($nodeData->size),
+            "title" => $nodeData->title,
+            "status" => $nodeData->status,
+            "reviewStatus" => $nodeData->reviewStatus,
+            "permissions" => base64_encode(json_encode($nodeData->permissions)),
+            "behaviour" => $nodeData->behaviour,
+            "thumbnailFileId" => $nodeData->thumbnailFileId,
+            "lockedThumbanilFileId" => $nodeData->lockedThumbnailFileId,
+            "imageURL" => $nodeData->imageURL,
+            "lockedImageURL" => $nodeData->lockedImageURL,
+            "mediaType" => $nodeData->mediaType,
+            "mediaFormat" => $nodeData->mediaFormat,
+            "mediaDuration" => strval($nodeData->mediaDuration),
+            "description" => base64_encode($nodeData->description),
+            "hideTitle" => $nodeData->hideTitle?"true":"false",
+            "hideProgress" => $nodeData->hideProgress?"true":"false",
+            "hideMedia" => $nodeData->hideMedia?"true":"false",
+            "backgroundColor" => strval($nodeData->backgroundColor),
+            "textColor" => strval($nodeData->textColor),
+            "skippable" => $nodeData->skippable?"true":"false",
+            "fullscreen" => $nodeData->fullscreen?"true":"false",
+            "fitWindow" => $nodeData->fitWindow?"true":"false",
+            "childOrdering" => base64_encode(json_encode($nodeData->childOrdering))
+        );
+        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -904,7 +942,12 @@ function updateTapestryNodeSize($request)
         $node = $tapestry->getNode($nodeMetaId);
 
         $node->set((object) ['size' => $size]);
-
+        // Update in Neptune
+        $data = array(
+            "id" => "node-" . $nodeMetaId,
+            "size" => strval($size),
+        );
+        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -943,7 +986,12 @@ function updateTapestryNodeDescription($request)
         $node = $tapestry->getNode($nodeMetaId);
 
         $node->set((object) ['description' => $description]);
-
+        // Update in Neptune
+        $data = array(
+            "id" => "node-" . $nodeMetaId,
+            "description" => $description,
+        );
+        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -982,7 +1030,12 @@ function updateTapestryNodeTitle($request)
         $node = $tapestry->getNode($nodeMetaId);
 
         $node->set((object) ['title' => $title]);
-
+        // Update in Neptune
+        $data = array(
+            "id" => "node-" . $nodeMetaId,
+            "title" => $title,
+        );
+        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -1021,7 +1074,12 @@ function updateTapestryNodeImageURL($request)
         $node = $tapestry->getNode($nodeMetaId);
 
         $node->set((object) ['imageURL' => $imageURL]);
-
+        // Update in Neptune
+        $data = array(
+            "id" => "node-" . $nodeMetaId,
+            "imageURL" => $imageURL,
+        );
+        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -1059,7 +1117,12 @@ function updateTapestryNodeLockedImageURL($request)
         $tapestry = new Tapestry($postId);
         $node = $tapestry->getNode($nodeMetaId);
         $node->set((object) ['lockedImageURL' => $imageURL]);
-
+        // Update in Neptune
+        $data = array(
+            "id" => "node-" . $nodeMetaId,
+            "lockedImageURL" => $imageURL,
+        );
+        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -1089,12 +1152,24 @@ function optimizeTapestryNodeThumbnails($request)
                 $urlPrepend = substr($nodeData->imageURL, 0, 4) === "http" ? "" : $protocol;
                 $attachmentId = TapestryHelpers::attachImageByURL($urlPrepend . $nodeData->imageURL);
                 $node->set((object) ['thumbnailFileId' => $attachmentId]);
+                // Update in Neptune
+                $data = array(
+                    "id" => "node-" . $nodeMetaId,
+                    "thumbnailFileId" => $attachmentId,
+                );
+                $response = NeptuneHelpers::httpPost("updateNodeData",$data);
                 $node->save();
             }
             if ($nodeData->lockedImageURL) {
                 $urlPrepend = substr($nodeData->lockedImageURL, 0, 4) === "http" ? "" : $protocol;
                 $attachmentId = TapestryHelpers::attachImageByURL($urlPrepend . $nodeData->lockedImageURL);
                 $node->set((object) ['lockedThumbnailFileId' => $attachmentId]);
+                // Update in Neptune
+                $data = array(
+                    "id" => "node-" . $nodeMetaId,
+                    "lockedThumbnailFileId" => $attachmentId
+                );
+                $response = NeptuneHelpers::httpPost("updateNodeData",$data);
                 $node->save();
             }
         }
@@ -1174,7 +1249,15 @@ function updateTapestryNodeCoordinates($request)
 
         $tapestry = new Tapestry($postId);
         $node = $tapestry->getNode($nodeMetaId);
+        
+        // Update in Neptune
+        $data = array(
+            "id" => "node-" . $nodeMetaId,
+            "coordinates_x" => strval($coordinates->x),
+            "coordinates_y" => strval($coordinates->y)
+        );
 
+        $response = NeptuneHelpers::httpPost("updateNodeData",$data);    
         $node->set((object) ['coordinates' => $coordinates]);
 
         return $node->save();
@@ -1238,6 +1321,7 @@ function updateProgressByNodeId($request)
     $nodeMetaId = $request['node_id'];
     $progressValue = $request['progress_value'];
     try {
+        error_log("Updating progress!");
         $userProgress = new TapestryUserProgress($postId, $nodeMetaId);
         $userProgress->updateUserProgress($progressValue);
     } catch (TapestryError $e) {

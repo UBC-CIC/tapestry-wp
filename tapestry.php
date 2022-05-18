@@ -333,14 +333,15 @@ function tapestry_tool_log_event()
 }
 
 
-// Code for AWS Neptune - Adds a user node in the graph database if it doesn't already exist
+// Code for AWS Neptune - Adds a user node in the graph database if it doesn't already exist,
+// also adds has_role edges to the role nodes corresponding to the roles the user has
 
 add_action('wp_login','loginTapestry',10,2);
 
 function loginTapestry($username,$user){
-    error_log("User logged in : " . json_encode($user->ID));
     $data = array(
-        'id' => strval($user->ID)
+        'id' => strval($user->ID),
+        'roles' => $user->roles
     );
     $response = NeptuneHelpers::httpPost("addUser",$data);
     error_log($response);
