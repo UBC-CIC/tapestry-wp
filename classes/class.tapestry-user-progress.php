@@ -4,6 +4,7 @@
 require_once dirname(__FILE__).'/../interfaces/interface.tapestry-user-progress.php';
 require_once dirname(__FILE__).'/../classes/class.tapestry-node.php';
 require_once dirname(__FILE__).'/../classes/class.tapestry.php';
+require_once dirname(__FILE__).'/../utilities/class.neptune-helpers.php';
 
 /**
  * Add/update/retrieve User progress.
@@ -198,6 +199,16 @@ class TapestryUserProgress implements ITapestryUserProgress
     private function _updateUserProgress($progressValue)
     {
         update_user_meta($this->_userId, 'tapestry_'.$this->postId.'_progress_node_'.$this->nodeMetaId, $progressValue);
+        // Update user progress in Neptune
+        $data = array(
+            'nodeId' => 'node-' . $this->nodeMetaId,
+            'userId' => strval($this->_userId),
+            'progressValue' => $progressValue == 1? '1.0' : strval($progressValue), // need the progressValue to be exactly '1.0'
+            'tapestryId' => strval($this->postId) 
+        );
+        error_log(json_encode($data));
+        $response = NeptuneHelpers::httpPost("updateUserProgress",$data);
+        error_log($response);
     }
 
     private function _complete()

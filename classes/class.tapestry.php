@@ -10,13 +10,13 @@ require_once dirname(__FILE__).'/../classes/class.constants.php';
 require_once dirname(__FILE__).'/../interfaces/interface.tapestry.php';
 require_once dirname(__FILE__).'/class.constants.php';
 require_once dirname(__FILE__).'/../utilities/class.neptune-helpers.php';
-require_once dirname(__FILE__).'/../utilities/class.sql-helpers.php';
+
 
 /**
  * TODO: Implement group functionality. Currently all the group-related
  * functionality code is commented out.
  */
-
+$currTapestry = null;
 /**
  * Add/update/retrieve a Tapestry.
  */
@@ -41,7 +41,7 @@ class Tapestry implements ITapestry
      *
      * @return null
      */
-    public function __construct($postId = 0)
+    public function __construct($postId = 0, $tapestryData = null)
     {
         $this->postId = (int) $postId;
         $this->author = (int) $this->_getAuthor();
@@ -53,8 +53,12 @@ class Tapestry implements ITapestry
         $this->settings = $this->_getDefaultSettings();
 
         if (TapestryHelpers::isValidTapestry($this->postId)) {
-            $tapestry = $this->_loadFromDatabase();
-            $this->set($tapestry);
+            if($tapestryData)
+                $this->set($tapestryData);
+            else{
+                $tapestry = $this->_loadFromDatabase();
+                $this->set($tapestry);
+            }      
         }
     }
 
@@ -811,12 +815,13 @@ class Tapestry implements ITapestry
     // GET Requests
 
     private function getTapestryFromNeptune(){
-        $response = NeptuneHelpers::httpGet("getTapestryNodes?id=" . strval($this->postId) . "&userId=" . strval(get_current_user_id()));
+        $response = NeptuneHelpers::httpGet("getTapestryNodes?id=" . strval($this->postId) . "&userId=" . strval(get_current_user_id()) 
+        . "&roles=" . NeptuneHelpers::getRolesAsString(get_current_user_id()));
         $tapestry = json_decode($response);
         $tapestry->rootId = intval($tapestry->rootId);
-        //NeptuneHelpers::convertNodesToInt($tapestry->nodes);
         NeptuneHelpers::convertLinksToInt($tapestry->links);
         $tapestry->nodes = NeptuneHelpers::convertObjectsToArr($tapestry->nodes,$this->postId);
         return $tapestry;
     }
+
 }

@@ -42,47 +42,10 @@ class NeptuneHelpers
     {
         $start = microtime(true);
         $contents = file_get_contents(self::NEPTUNE_API_URL . $url);
-        error_log(json_encode(debug_backtrace()));
         error_log("GET " . $url . " " . (microtime(true)-$start));
         return $contents;
     }
 
-    public static function multiHttpGet($urls)
-    {
-        $curls = array();
-        $mh = curl_multi_init();
-        for($i = 0; $i<count($urls); $i++){
-            $curls[$i] = curl_init(self::NEPTUNE_API_URL . $urls[$i]);
-            curl_setopt($curls[$i], CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curls[$i], CURLOPT_SSL_VERIFYPEER, 0);
-            curl_multi_add_handle($mh,$curls[$i]);
-        }
-        $active = null;
-        do {
-            $status = curl_multi_exec($mh, $active);
-        } while ($active > 0);
-        $responses = array();
-        for($i = 0; $i<count($urls); $i++){
-            $responses[$i] = curl_multi_getcontent($curls[$i]);
-            curl_multi_remove_handle($mh,$curls[$i]);
-        }
-        curl_multi_close($mh);
-        return $responses;
-    }
-
-    /*
-    public static function httpHead($url)
-    {
-        $curl = curl_init(self::NEPTUNE_API_URL . $url);
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "HEAD");
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-        $response = curl_exec($curl);
-        return curl_getinfo($curl,CURLINFO_HTTP_CODE);
-        curl_close($curl);
-    }
-
-    */
 
     /**
     * Make a HTTP DELETE request to Neptune APIs.
@@ -158,6 +121,12 @@ class NeptuneHelpers
         return $nodeArray;
     }
 
+    public static function getRolesAsString($userId){
+        $user = get_userdata($userId);
+
+        return base64_encode(json_encode($user->roles));
+    }
+
     private static function sanitizeNodeObject(&$object,$key){
         $object->id = intval($key);
         $object->fitWindow = $object->fitWindow[0] == 'true';
@@ -194,11 +163,13 @@ class NeptuneHelpers
         if (property_exists($object, 'mapCoordinates_lat')) {
             $object->mapCoordinates = (object) array("lat" => floatval($object->mapCoordinates_lat[0]), "lng" => floatval($object->mapCoordinates_lng[0]));
         }
-        $object->unlocked = true;
-        $object->accessible = true;
+        $object->unlocked = $object->accessible;
+        $object->accessible = $object->accessible;
         $object->typeData = new stdClass();
         $object->childOrdering = array_map(function ($n) {
             return intval($n);
         },json_decode(base64_decode($object->childOrdering[0])));
     }
+
+
 }
