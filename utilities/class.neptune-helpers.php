@@ -19,6 +19,10 @@ class NeptuneHelpers
     public static function httpPost($url, $data)
     {
         $start = microtime(true);
+        $tries = 0;
+        $httpcode = null;
+        $response = null;
+        // Reattempt request upto three times in case of server error (e.g. premature connection close)
         $curl = curl_init(self::NEPTUNE_API_URL . $url);
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
@@ -26,6 +30,7 @@ class NeptuneHelpers
         curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
         $response = curl_exec($curl);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($curl);
         error_log("POST " . $url . " " . (microtime(true)-$start));
         return $response;
@@ -41,9 +46,13 @@ class NeptuneHelpers
     public static function httpGet($url)
     {
         $start = microtime(true);
-        $contents = file_get_contents(self::NEPTUNE_API_URL . $url);
-        error_log("GET " . $url . " " . (microtime(true)-$start));
-        return $contents;
+        // Reattempt request upto three times in case of server error (e.g. premature connection close)
+        $curl = curl_init(self::NEPTUNE_API_URL . $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        $response = curl_exec($curl);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        return $response;
     }
 
 

@@ -500,6 +500,7 @@ function importTapestry($postId, $tapestryData)
         foreach ($tapestryData->nodes as $node) {
             $i++;
             error_log("Nodes: " . $i . "/" . $numNodes);
+            $node->conditions = []; // Current Neptune implementation of the import feature does not support import of conditions
             $oldNodeId = $node->id;
             $newNode = $tapestry->addNode($node);
             $newNodeId = $newNode->id;
