@@ -587,19 +587,8 @@ class Tapestry implements ITapestry
     private function _getTapestry($filterUserId)
     {
         // Get all the nodes from the database (we will need this info and only want to do it once)
-        $start = microtime(true);
-        //$tapestry = $this->_filterTapestry($this->_formTapestry(), $filterUserId);
         $tapestry = $this->_formTapestry();
-
-        //Don't think we need this anymore
-        /*$this->nodeObjects = array_filter($this->nodeObjects, function ($nodeId) use ($nodeIds) {
-            return in_array($nodeId, $nodeIds);
-        }, ARRAY_FILTER_USE_KEY);*/
-
-        $start = microtime(true);
-        //$tapestry->nodes = $this->getNodesDataForRender();
         $tapestry->nodes = $this->_addH5PMeta($tapestry->nodes);
-        error_log("4: " . (microtime(true)-$start));
         $start = microtime(true);
         // $tapestry->groups = array_map(
         //     function ($groupMetaId) {
@@ -611,7 +600,7 @@ class Tapestry implements ITapestry
         // );
 
         $userProgress = new TapestryUserProgress($this->postId);
-        $tapestry->userProgress = $userProgress->get($tapestry);  
+        $tapestry->userProgress = $userProgress->get($tapestry); 
         return $tapestry;
     }
 

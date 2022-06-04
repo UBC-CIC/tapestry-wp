@@ -240,9 +240,8 @@ class TapestryUserProgress implements ITapestryUserProgress
         // Build json object for frontend e.g. {0: 0.1, 1: 0.2} where 0 and 1 are the node IDs
         foreach ($nodes as $node) {
             $nodeId = $node->id;
-
             $userId = $this->_userId;
-            $progress_value = get_user_meta($userId, 'tapestry_'.$this->postId.'_progress_node_'.$nodeId, true);
+            $progress_value = $tapestry->userProgress[$nodeId]->progress;
             $progress->$nodeId = new stdClass();
             if (null !== $progress_value) {
                 $progress->$nodeId->progress = (float) $progress_value;

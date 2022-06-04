@@ -108,6 +108,7 @@ function setDatasetProgress(dataset, progress) {
     localStorage.setItem("tapestry-progress", JSON.stringify(progress))
   }
   dataset.userAnswers = {}
+  console.log(progress)
   for (const [id, nodeProgress] of Object.entries(progress)) {
     const node = dataset.nodes[id]
 
@@ -138,7 +139,6 @@ function setDatasetProgress(dataset, progress) {
 }
 
 function initializeOrdering(state, node) {
-  console.log(node)
   getChildIds(state, node.id)
     .filter(cid => !node.childOrdering.includes(cid))
     .forEach(id => node.childOrdering.push(id))

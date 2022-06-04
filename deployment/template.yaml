@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Deployment Template for Tapestry's Cloud Resources
+  
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Runtime: nodejs16.x
+    Timeout: 25
+    MemorySize: 512
+
+Resources:
+  TapestryVPC:
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: "Name"
+          Value: "TapestryVPC" 
+    
+  TapestryVPCSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: TapestryVPC
+    Properties: 
+      AvailabilityZone: ca-central-1b
+      CidrBlock: 10.0.1.0/24
+      EnableDns64: false
+      VpcId: !Ref TapestryVPC
+      Tags:
+        - Key: "Name"
+          Value: "TapestrySubnet1" 
+
+  TapestryVPCSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: TapestryVPC
+    Properties: 
+      AvailabilityZone: ca-central-1a
+      CidrBlock: 10.0.0.0/24
+      EnableDns64: false
+      VpcId: !Ref TapestryVPC
+      Tags:
+        - Key: "Name"
+          Value: "TapestrySubnet2" 
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: TapestryVPC
+    Properties:
+      VpcId: !Ref TapestryVPC
+      Tags:
+        - Key: "Name"
+          Value: "TapestryVPCRouteTable" 
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Tags:
+        - Key: "Name"
+          Value: "TapestryVPCInternet" 
+
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn:
+      - TapestryVPC
+      - InternetGateway
+    Properties: 
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref TapestryVPC
+
+  Route1:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - InternetGateway
+      - RouteTable
+      - GatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref RouteTable
+
+  AssociationSubnet1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: 
+      - RouteTable
+      - TapestryVPCSubnet1
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref TapestryVPCSubnet1
+
+  AssociationSubnet2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: 
+      - RouteTable
+      - TapestryVPCSubnet2
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref TapestryVPCSubnet2
+
+  GetTapestryNodes:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambdas/getTapestryNodes/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /getTapestryNodes
+            Method: get
+  AddNode:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambdas/addNode/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /addNode
+            Method: post
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  #HelloWorldApi:
+  #  Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+  #  Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  #HelloWorldFunction:
+  #  Description: "Hello World Lambda Function ARN"
+  #  Value: !GetAtt HelloWorldFunction.Arn
+  #HelloWorldFunctionIamRole:
+  #  Description: "Implicit IAM Role created for Hello World function"
+  #  Value: !GetAtt HelloWorldFunctionRole.Arn
+  TapestryDepApi:
+    Description: Here is the URL
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+
+

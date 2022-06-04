@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Deployment Template for Tapestry''s Cloud Resources
+
+  '
+Globals:
+  Function:
+    Runtime: nodejs16.x
+    Timeout: 25
+    MemorySize: 512
+Resources:
+  TapestryVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+  TapestryVPCSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: TapestryVPC
+    Properties:
+      AvailabilityZone: ca-central-1b
+      CidrBlock: 10.0.1.0/24
+      EnableDns64: false
+      VpcId:
+        Ref: TapestryVPC
+  TapestryVPCSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: TapestryVPC
+    Properties:
+      AvailabilityZone: ca-central-1a
+      CidrBlock: 10.0.0.0/24
+      EnableDns64: false
+      VpcId:
+        Ref: TapestryVPC
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: TapestryVPC
+    Properties:
+      VpcId:
+        Ref: TapestryVPC
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn:
+    - TapestryVPC
+    - InternetGateway
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId:
+        Ref: TapestryVPC
+  Route1:
+    Type: AWS::EC2::Route
+    DependsOn:
+    - InternetGateway
+    - RouteTable
+    Properties:
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId:
+        Ref: InternetGateway
+      RouteTableId:
+        Ref: RouteTable
+  AssociationSubnet1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+    - RouteTable
+    - TapestryVPCSubnet1
+    Properties:
+      RouteTableId:
+        Ref: RouteTable
+      SubnetId:
+        Ref: TapestryVPCSubnet1
+  AssociationSubnet2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+    - RouteTable
+    - TapestryVPCSubnet2
+    Properties:
+      RouteTableId:
+        Ref: RouteTable
+      SubnetId:
+        Ref: TapestryVPCSubnet2
+  GetTapestryNodes:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GetTapestryNodes
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi
+          Properties:
+            Path: /getTapestryNodes
+            Method: get
+    Metadata:
+      SamResourceId: GetTapestryNodes
+  AddNode:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: AddNode
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi
+          Properties:
+            Path: /addNode
+            Method: post
+    Metadata:
+      SamResourceId: AddNode
+Outputs:
+  TapestryDepApi:
+    Description: Here is the URL
+    Value:
+      Fn::Sub: https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/

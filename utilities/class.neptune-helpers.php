@@ -22,7 +22,6 @@ class NeptuneHelpers
         $tries = 0;
         $httpcode = null;
         $response = null;
-        // Reattempt request upto three times in case of server error (e.g. premature connection close)
         $curl = curl_init(self::NEPTUNE_API_URL . $url);
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
@@ -45,6 +44,7 @@ class NeptuneHelpers
      */
     public static function httpGet($url)
     {
+        error_log($url);
         $start = microtime(true);
         // Reattempt request upto three times in case of server error (e.g. premature connection close)
         $curl = curl_init(self::NEPTUNE_API_URL . $url);
