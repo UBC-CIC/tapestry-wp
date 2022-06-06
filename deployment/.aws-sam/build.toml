@@ -19,4 +19,85 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["AddNode"]
 
+[function_build_definitions.6fd566ca-dc97-42fc-a967-a49e38b13d0a]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\addEdge"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["AddEdge"]
+
+[function_build_definitions.d2c2d375-a6a3-4716-958b-11d4424a2e38]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\addTapestry"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["AddTapestry"]
+
+[function_build_definitions.918ef0b4-cd2f-4849-b2c8-7d56f58772f1]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\addUser"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["AddUser"]
+
+[function_build_definitions.8411e45a-3dd0-4815-bbb9-f49b8288ca92]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\deleteEdge"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["DeleteEdge"]
+
+[function_build_definitions.9d0f6051-36e6-4ee0-bc79-8e78bb47fc62]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\deleteVertex"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["DeleteVertex"]
+
+[function_build_definitions.8878b01f-f86d-45ee-8187-7487f653e687]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\isChildNodeOfTapestry"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["IsChildNodeOfTapestry"]
+
+[function_build_definitions.2a488707-cf80-424b-8062-d87d5968184b]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\reverseEdge"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["ReverseEdge"]
+
+[function_build_definitions.9ff3093f-7976-4aa6-924c-bffb1b3192e4]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\updateNodeData"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["UpdateNodeData"]
+
+[function_build_definitions.c242e4be-2bf2-4beb-ad13-ccb9828641f4]
+codeuri = "C:\\wamp64\\www\\wordpress\\wp-content\\plugins\\tapestry-wp\\deployment\\lambdas\\updateUserProgress"
+runtime = "nodejs16.x"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["UpdateUserProgress"]
+
 [layer_build_definitions]

@@ -241,7 +241,8 @@ class TapestryUserProgress implements ITapestryUserProgress
         foreach ($nodes as $node) {
             $nodeId = $node->id;
             $userId = $this->_userId;
-            $progress_value = $tapestry->userProgress[$nodeId]->progress;
+            $prevProgress = (array) $tapestry->userProgress;
+            $progress_value = $prevProgress[$nodeId]->progress;
             $progress->$nodeId = new stdClass();
             if (null !== $progress_value) {
                 $progress->$nodeId->progress = (float) $progress_value;

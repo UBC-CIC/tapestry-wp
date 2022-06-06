@@ -1,6 +1,9 @@
 /*
-*   Request Type: DELETE
-*   Required Query String Parameter 'id' - The id of the vertex to be deleted
+*   Request Type: POST
+*   Request Body {
+*     to - The id of the target of the link to be deleted
+*     from - The id of the source of the link to be deleted
+*   }
 */
 
 const gremlin = require('gremlin');
@@ -15,15 +18,19 @@ const __ = gremlin.process.statics;
 let conn = null;
 let g = null;
 
-async function query(id) {
-  if(id){
-      await g.V(id).out('has_condition').drop().next(); // Executes only in case of deletion of tapestry_nodes with conditions
-      return g.V(id).drop().next();
+async function query(from,to) {
+  if(from != undefined && to != undefined){
+      return Promise.all(
+        [
+        g.V(from).outE('connected_to').where(__.inV().has(t.id,to)).drop().next(),
+        g.addE('connected_to').from_(__.V(to)).to(__.V(from)).next()
+        ]
+        );
   }
 }
 
-async function doQuery(id) {
-  let result = await query(id);
+async function doQuery(from,to) {
+  let result = await query(from,to);
   return result;
 }
 
@@ -111,11 +118,12 @@ exports.handler = async (event, context) => {
 
     }, 
     async ()=>{
-      var result = await doQuery(event.queryStringParameters.id);
+      var request = JSON.parse(event.body);
+      var result = await doQuery(request.from, request.to);
       if(result){
           return {
               statusCode: 200,
-              body: "Delete Successful"
+              body: "Reverse Successful"
           }
       }
       else{

@@ -17,7 +17,6 @@ let g = null;
 
 async function query(id) {
   if(id){
-      await g.V(id).out('has_condition').drop().next(); // Executes only in case of deletion of tapestry_nodes with conditions
       return g.V(id).drop().next();
   }
 }

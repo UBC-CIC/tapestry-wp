@@ -4,7 +4,7 @@ require_once dirname(__FILE__).'/../classes/class.tapestry-node.php';
 
 class NeptuneHelpers
 {
-    const NEPTUNE_API_URL = 'https://qqj4bz0cg9.execute-api.ca-central-1.amazonaws.com/default/';
+    const NEPTUNE_API_URL = 'https://45h1qy1mtf.execute-api.ca-central-1.amazonaws.com/';
     
 
     /**

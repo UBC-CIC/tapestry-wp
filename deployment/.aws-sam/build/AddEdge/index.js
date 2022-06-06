@@ -1,8 +1,10 @@
 /*
-*   Request Type: DELETE
-*   Required Query String Parameter 'id' - The id of the vertex to be deleted
+* Request Type: POST
+* Request Body {
+*   from - id of source node (format - node-x where x is the node ID) 
+*   to - id of target node (format - node-x where x is the node ID)
+* }
 */
-
 const gremlin = require('gremlin');
 const async = require('async');
 const {getUrlAndHeaders} = require('gremlin-aws-sigv4/lib/utils');
@@ -15,16 +17,17 @@ const __ = gremlin.process.statics;
 let conn = null;
 let g = null;
 
-async function query(id) {
-  if(id){
-      await g.V(id).out('has_condition').drop().next(); // Executes only in case of deletion of tapestry_nodes with conditions
-      return g.V(id).drop().next();
-  }
+async function query(from,to) {
+  var result = g.addE('connected_to').from_(__.V(from)).to(__.V(to)).next();
+  return result;
 }
 
-async function doQuery(id) {
-  let result = await query(id);
-  return result;
+async function doQuery(from,to) {
+  if(from && to){
+    let result = await query(from,to);
+    return result['value'];
+  }
+  return;
 }
 
 
@@ -111,18 +114,18 @@ exports.handler = async (event, context) => {
 
     }, 
     async ()=>{
-      var result = await doQuery(event.queryStringParameters.id);
+      var request = JSON.parse(event.body);
+      console.log(request);
+      var result = await doQuery(request.from,request.to);
       if(result){
           return {
-              statusCode: 200,
-              body: "Delete Successful"
-          }
+            statusCode: 200,
+            body: JSON.stringify(result)
+          };
       }
-      else{
-          return {
-              statusCode: 400,
-              body: "Bad Request :("
-          }
+      return {
+        statusCode: 400,
+        body: JSON.stringify("Bad request")
       }
     })
 };

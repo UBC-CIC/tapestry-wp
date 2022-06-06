@@ -122,8 +122,8 @@ class Tapestry implements ITapestry
         if (isset($tapestry->dataPostIds)){
             $this->dataPostIds = $tapestry->dataPostIds;
         }
-        if (isset($tapestry->nodeObjects)){
-            $this->nodeObjects = $tapestry->nodeObjects;
+        if(isset($tapestry->userProgress)){
+            $this->userProgress = (array) $tapestry->userProgress;
         }
     }
 
@@ -211,7 +211,7 @@ class Tapestry implements ITapestry
         // Remove the rootId field
         if ($nodeId == $this->rootId) {
             foreach ($this->nodes as $node) {
-                if ($node !== $this->rootId && !TapestryHelpers::nodeIsDraft($node, $this->postId)) {
+                if ($node->id !== $this->rootId && !TapestryHelpers::nodeIsDraft($node, $this->postId)) {
                     throw new TapestryError('CANNOT_DELETE_ROOT');
                 }
             }
@@ -573,6 +573,7 @@ class Tapestry implements ITapestry
             'links' => $this->links,
             'settings' => $this->settings,
             'rootId' => $this->rootId,
+            'userProgress' => $this->userProgress
         ];
     }
 
@@ -601,6 +602,7 @@ class Tapestry implements ITapestry
 
         $userProgress = new TapestryUserProgress($this->postId);
         $tapestry->userProgress = $userProgress->get($tapestry); 
+        error_log(json_encode($tapestry->userProgress));
         return $tapestry;
     }
 

@@ -1,6 +1,11 @@
 /*
-*   Request Type: DELETE
-*   Required Query String Parameter 'id' - The id of the vertex to be deleted
+* Request Type: POST
+* Request Body: {
+*   id: required 
+*   rootId: required (format: node-x where x is the node ID)
+*   author: required
+*   Any other parameters: Optional
+* }
 */
 
 const gremlin = require('gremlin');
@@ -15,16 +20,25 @@ const __ = gremlin.process.statics;
 let conn = null;
 let g = null;
 
-async function query(id) {
-  if(id){
-      await g.V(id).out('has_condition').drop().next(); // Executes only in case of deletion of tapestry_nodes with conditions
-      return g.V(id).drop().next();
+async function query(request) {
+  let query = 'g.addV(\'tapestry\').property(t.id,request.id)';
+  let properties = Object.keys(request);
+  for(let i in properties){
+     if(properties[i] != "id"){
+       query += `.property(\"${properties[i]}\",\"${request[properties[i]]}\")`;
+     }
   }
+  console.log(query);
+  return eval(query + '.next()');
 }
 
-async function doQuery(id) {
-  let result = await query(id);
-  return result;
+async function doQuery(requestJSON) {
+  let request = JSON.parse(requestJSON);
+  if(request){
+      let result = await query(request);
+      return result['value'];
+  }
+  return;
 }
 
 
@@ -111,18 +125,11 @@ exports.handler = async (event, context) => {
 
     }, 
     async ()=>{
-      var result = await doQuery(event.queryStringParameters.id);
-      if(result){
-          return {
-              statusCode: 200,
-              body: "Delete Successful"
-          }
-      }
-      else{
-          return {
-              statusCode: 400,
-              body: "Bad Request :("
-          }
-      }
+      console.log(event);
+      var result = await doQuery(event.body);
+      return {
+        statusCode: 200,
+        body: JSON.stringify(result)
+      };
     })
 };

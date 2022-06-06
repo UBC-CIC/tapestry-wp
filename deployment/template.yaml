@@ -57,7 +57,8 @@ Resources:
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
-    Tags:
+    Properties:
+      Tags:
         - Key: "Name"
           Value: "TapestryVPCInternet" 
 
@@ -99,30 +100,406 @@ Resources:
       RouteTableId: !Ref RouteTable
       SubnetId: !Ref TapestryVPCSubnet2
 
+  NeptuneSubnetGroup:
+    Type: AWS::Neptune::DBSubnetGroup
+    DependsOn:
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+    Properties:
+      DBSubnetGroupDescription: Subnet group for Tapestry's Neptune Database
+      DBSubnetGroupName: neptune-subnet-group
+      SubnetIds:
+        - !Ref TapestryVPCSubnet1
+        - !Ref TapestryVPCSubnet2
+
+  NeptuneDBCluster:
+    Type: AWS::Neptune::DBCluster
+    DependsOn:
+      - NeptuneSubnetGroup
+    Properties:
+      AvailabilityZones: 
+        - ca-central-1a
+        - ca-central-1b
+      DBClusterIdentifier: tapestry-neptune-cluster
+      DBSubnetGroupName: neptune-subnet-group
+      EngineVersion: 1.0.5.1
+      Port: 8182
+      #VpcSecurityGroupIds: Check Later
+
+  NeptuneDBInstance:
+    Type: AWS::Neptune::DBInstance
+    DependsOn: 
+      - NeptuneDBCluster
+      - NeptuneSubnetGroup
+    Properties:
+       AvailabilityZone: ca-central-1a
+       DBClusterIdentifier: tapestry-neptune-cluster
+       DBInstanceClass: db.t3.medium
+       DBInstanceIdentifier: tapestry-neptune-instance
+       DBSubnetGroupName: neptune-subnet-group
+
+  # Lambda Layer
+
+  LambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ./layer
+      LayerName: LambdaLayerTapestry     
+       
+  # Lambda Functions
+
   GetTapestryNodes:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
     Properties:
       CodeUri: lambdas/getTapestryNodes/
       Handler: index.handler
       Runtime: nodejs16.x
+      FunctionName: getTapestryNodesTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
       Events:
         TapestryDepAPI:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /getTapestryNodes
             Method: get
+
   AddNode:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
     Properties:
       CodeUri: lambdas/addNode/
       Handler: index.handler
       Runtime: nodejs16.x
+      FunctionName: addNodeTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
       Events:
         TapestryDepAPI:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /addNode
             Method: post
+
+  AddEdge:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/addEdge/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: addEdgeTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /addEdge
+            Method: post
+
+  AddTapestry:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/addTapestry/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: addTapestryTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /addTapestry
+            Method: post
+
+  AddUser:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/addUser/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: addUserTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /addUser
+            Method: post
+
+  DeleteEdge:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/deleteEdge/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: deleteEdgeTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /deleteEdge
+            Method: delete
+
+  DeleteVertex:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/deleteVertex/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: deleteVertexTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /deleteVertex
+            Method: delete
+
+  IsChildNodeOfTapestry:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/isChildNodeOfTapestry/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: isChildNodeOfTapestryTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /isChildNodeOfTapestry
+            Method: get
+
+  ReverseEdge:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/reverseEdge/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: reverseEdgeTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /reverseEdge
+            Method: post
+
+  UpdateNodeData:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/updateNodeData/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: updateNodeDataTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /updateNodeData
+            Method: post
+
+  UpdateUserProgress:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    DependsOn:
+      - TapestryVPC
+      - TapestryVPCSubnet1
+      - TapestryVPCSubnet2
+      - NeptuneDBInstance
+    Properties:
+      CodeUri: lambdas/updateUserProgress/
+      Handler: index.handler
+      Runtime: nodejs16.x
+      FunctionName: updateUserProgressTapestry
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt TapestryVPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref TapestryVPCSubnet1
+          - !Ref TapestryVPCSubnet2
+      Environment:
+        Variables:
+          NEPTUNE_PORT: 8182
+          NEPTUNE_ENDPOINT: !GetAtt NeptuneDBInstance.Endpoint
+          USE_IAM: false
+      Layers:
+        - !Ref LambdaLayer
+      Events:
+        TapestryDepAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /updateUserProgress
+            Method: post
+
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

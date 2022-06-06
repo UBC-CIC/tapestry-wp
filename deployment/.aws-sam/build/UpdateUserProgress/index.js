@@ -1,8 +1,8 @@
 /*
-*   Request Type: DELETE
-*   Required Query String Parameter 'id' - The id of the vertex to be deleted
+* Request Type: POST
+* Request Contents 
+* { userId, nodeId, progressValue }
 */
-
 const gremlin = require('gremlin');
 const async = require('async');
 const {getUrlAndHeaders} = require('gremlin-aws-sigv4/lib/utils');
@@ -11,20 +11,28 @@ const traversal = gremlin.process.AnonymousTraversalSource.traversal;
 const DriverRemoteConnection = gremlin.driver.DriverRemoteConnection;
 const t = gremlin.process.t;
 const __ = gremlin.process.statics;
+const p = gremlin.process.P;
+
 
 let conn = null;
 let g = null;
 
-async function query(id) {
-  if(id){
-      await g.V(id).out('has_condition').drop().next(); // Executes only in case of deletion of tapestry_nodes with conditions
-      return g.V(id).drop().next();
-  }
+async function query(request) {
+  console.log(request);
+  return g.V(request.nodeId).choose(__.inE('user_data').where(__.outV().has('userId',request.userId)).count().is(0),
+  // No user progress exists
+  __.addE('user_data').from_(__.V().hasLabel('user').has('userId',request.userId)).to(__.V(request.nodeId)),
+  // User progress exists
+  __.V(request.nodeId).inE('user_data').where(__.outV().has('userId',request.userId))
+  ).property('percent_completed',request.progressValue).property('tapestryId',request.tapestryId).next()
 }
 
-async function doQuery(id) {
-  let result = await query(id);
-  return result;
+async function doQuery(request) {
+  if(request){
+    var result = query(request);
+    return result;
+  }
+  return;
 }
 
 
@@ -75,6 +83,8 @@ exports.handler = async (event, context) => {
     conn = createRemoteConnection();
     g = createGraphTraversalSource(conn);
   }
+  
+  
 
   return async.retry(
     { 
@@ -111,18 +121,19 @@ exports.handler = async (event, context) => {
 
     }, 
     async ()=>{
-      var result = await doQuery(event.queryStringParameters.id);
-      if(result){
-          return {
-              statusCode: 200,
-              body: "Delete Successful"
-          }
+      var request = JSON.parse(event.body);
+      var result = await doQuery(request);
+      if(result.value){
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+          task: `Updated user-${request.userId} progress for ${request.nodeId} to ${request.progressValue}`
+        })
       }
-      else{
-          return {
-              statusCode: 400,
-              body: "Bad Request :("
-          }
+      }
+      return {
+        statusCode: 404,
+        body: JSON.stringify("Error updating progress")
       }
     })
 };

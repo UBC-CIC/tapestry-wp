@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "async": "^3.2.3",
+    "gremlin": "^3.5.2",
+    "gremlin-aws-sigv4": "^3.5.1"
+  }
+}
