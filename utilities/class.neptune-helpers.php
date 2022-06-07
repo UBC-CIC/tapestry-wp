@@ -4,8 +4,6 @@ require_once dirname(__FILE__).'/../classes/class.tapestry-node.php';
 
 class NeptuneHelpers
 {
-    const NEPTUNE_API_URL = 'https://45h1qy1mtf.execute-api.ca-central-1.amazonaws.com/';
-    
 
     /**
     * Make a HTTP POST request to Neptune APIs.
@@ -19,10 +17,10 @@ class NeptuneHelpers
     public static function httpPost($url, $data)
     {
         $start = microtime(true);
-        $tries = 0;
+        $endpoint = get_option('api_endpoint');
         $httpcode = null;
         $response = null;
-        $curl = curl_init(self::NEPTUNE_API_URL . $url);
+        $curl = curl_init($endpoint . $url);
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -44,10 +42,9 @@ class NeptuneHelpers
      */
     public static function httpGet($url)
     {
-        error_log($url);
         $start = microtime(true);
-        // Reattempt request upto three times in case of server error (e.g. premature connection close)
-        $curl = curl_init(self::NEPTUNE_API_URL . $url);
+        $endpoint = get_option('api_endpoint');
+        $curl = curl_init($endpoint . $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
         $response = curl_exec($curl);
@@ -69,7 +66,8 @@ class NeptuneHelpers
     public static function httpDelete($url)
     {
         $start = microtime(true);
-        $curl = curl_init(self::NEPTUNE_API_URL . $url);
+        $endpoint = get_option('api_endpoint');
+        $curl = curl_init($endpoint . $url);
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);

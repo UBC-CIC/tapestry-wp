@@ -12,8 +12,9 @@ function add_tapestry_settings_page()
 function tapestry_settings_init()
 {
     add_settings_section('tapestry_db_settings', 'Database Settings', 'tapestry_db_section_cb', 'tapestry_settings_page');
-
     add_settings_field('tapestry_clean_h5p_nodes', 'Clean h5p Nodes', 'tapestry_clean_h5p_nodes_cb', 'tapestry_settings_page', 'tapestry_db_settings');
+    add_settings_section('neptune_db_settings', 'Neptune API Endpoint', 'neptune_section_cb', 'neptune_settings_page');
+    add_settings_field('neptune_api_field', 'Neptune API endpoint', 'neptune_field_cb', 'neptune_settings_page', 'neptune_db_settings');
 }
 
 function tapestry_settings_page_cb()
@@ -25,6 +26,11 @@ function tapestry_settings_page_cb()
             do_settings_sections('tapestry_settings_page'); ?>
         <input type="submit" value="Run" name="tapestry_db"/>
     </form>
+    <form action="<?php htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <?php
+            do_settings_sections('neptune_settings_page'); ?>
+        <input type="submit" value="Submit" name="neptune_api_endpoint"/>
+    </form>
     <?php
 }
 
@@ -33,15 +39,27 @@ function tapestry_db_section_cb()
     echo 'Perform database modifications';
 }
 
+
 function tapestry_clean_h5p_nodes_cb()
 {
     echo "<input type='checkbox' id='clean_h5p_nodes' name='clean_h5p_nodes'  value='1'/>";
+}
+
+function neptune_section_cb()
+{
+    echo 'Change API Endpoint';
+}
+
+function neptune_field_cb()
+{
+    echo "<input type='text' id='api_endpoint' name='api_endpoint' />";
 }
 
 function run_db_commands()
 {
     if (isset($_POST['tapestry_db'])) {
         if (isset($_POST['clean_h5p_nodes'])) {
+            error_log(json_encode(get_option('admin_email')));
             $query_args = array(
                 'post_type' => 'tapestry_node',
                 'meta_query' => array(
@@ -68,6 +86,16 @@ function run_db_commands()
                 }
             }
             add_action('admin_notices', 'tapestry_h5p_conf_notice');
+        }
+    }
+
+    if (isset($_POST['neptune_api_endpoint'])) {
+        if (isset($_POST['api_endpoint'])) {
+            if (get_option('api_endpoint') === false) {
+                add_option('api_endpoint', $_POST['api_endpoint']);
+            } else {
+                update_option('api_endpoint', $_POST['api_endpoint']);
+            }
         }
     }
 }
