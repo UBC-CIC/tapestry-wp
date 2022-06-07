@@ -1,10 +1,15 @@
-/*
-*   Request Type: POST
-*   Request Body {
-*     to - The id of the target of the link to be deleted
-*     from - The id of the source of the link to be deleted
-*   }
-*/
+/**
+ * The following is the Lambda function set-up for the Gremlin-Lambda combination,
+ * as recommended by AWS Documentation: https://docs.aws.amazon.com/neptune/latest/userguide/lambda-functions-examples.html
+ * All changes involving interaction with gremlin should be done in the query async method.
+ */
+
+/**
+ * POST Request
+ * Required in request body:
+ * - from: id of the source node of the edge to reverse, formatted as "node-x" where x is node->id
+ * - to: id of the target node of the edge to reverse, formatted as "node-x" where x is node->id 
+ */
 
 const gremlin = require('gremlin');
 const async = require('async');
@@ -22,7 +27,9 @@ async function query(from,to) {
   if(from != undefined && to != undefined){
       return Promise.all(
         [
+        // Delete the existing edge  
         g.V(from).outE('connected_to').where(__.inV().has(t.id,to)).drop().next(),
+        // Add a new, reversed edge
         g.addE('connected_to').from_(__.V(to)).to(__.V(from)).next()
         ]
         );

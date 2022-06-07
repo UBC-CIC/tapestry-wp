@@ -1,10 +1,15 @@
-/*
-* Request Type: POST
-* Request Body {
-*   id - User id
-*   roles - roles of the user
-* }
-*/
+/**
+ * The following is the Lambda function set-up for the Gremlin-Lambda combination,
+ * as recommended by AWS Documentation: https://docs.aws.amazon.com/neptune/latest/userguide/lambda-functions-examples.html
+ * All changes involving interaction with gremlin should be done in the query async method.
+ */
+
+/**
+ * POST Request
+ * Required in request body:
+ * - id: user id
+ * - roles: user's roles as a JSON string
+ */
 const gremlin = require('gremlin');
 const async = require('async');
 const {getUrlAndHeaders} = require('gremlin-aws-sigv4/lib/utils');
@@ -18,6 +23,7 @@ let conn = null;
 let g = null;
 
 async function query(id,roles) {
+  // Create user if not created
   var result = g.V().hasLabel('user').has('userId',id).count().choose(__.is(0),__.addV('user').property('userId',id),__.V().hasLabel('user').has('userId',id)).next()
   // Handle roles
   if(roles && roles.length != 0){
@@ -28,7 +34,8 @@ async function query(id,roles) {
       promises.push(
         // Create role node if it does not exist and then create a has_role edge to it if it does not exist.  
         g.V().hasLabel('user').has('userId',id).outE('has_role').where(__.inV().has('name',role)).count()
-        .choose(__.is(0),__.addE('has_role').from_(__.V().hasLabel('user').has('userId',id)).to(__.V().hasLabel('role').has('name',role).count().choose(__.is(0),__.addV(role).property('name',role),__.V().hasLabel('role').has('name',role))),
+        .choose(__.is(0),__.addE('has_role').from_(__.V().hasLabel('user').has('userId',id)).to(__.V().hasLabel('role').has('name',role).count()
+        .choose(__.is(0),__.addV(role).property('name',role),__.V().hasLabel('role').has('name',role))),
         __.V().hasLabel('user').has('userId',id).outE('has_role').where(__.inV().has('name',role)))
         .next()
       );

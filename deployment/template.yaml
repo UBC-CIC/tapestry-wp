@@ -515,7 +515,7 @@ Outputs:
   #  Description: "Implicit IAM Role created for Hello World function"
   #  Value: !GetAtt HelloWorldFunctionRole.Arn
   TapestryDepApi:
-    Description: Here is the URL
+    Description: API Gateway URL. Paste this into utitities/class.neptune-helpers.php
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
 
 

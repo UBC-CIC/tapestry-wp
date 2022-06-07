@@ -57,10 +57,10 @@ class TapestryNode implements ITapestryNode
      * @param Boolean $bulkLoad      set to true if $metaData and $nodeData present (allows usage of these to initialize nodes instead of querying the database repeatedly)
      * @param Object $metaData       maps node Id to metadata
      * @param Object $nodeData       maps node Id to node data
-     * 
+     *
      * @return null
      */
-    public function __construct($tapestryPostId = 0, $nodeMetaId = 0, $neptuneLoad = false)
+    public function __construct($tapestryPostId = 0, $nodeMetaId = 0)
     {
         $this->tapestryPostId = (int) $tapestryPostId;
         $this->nodePostId = 0;
@@ -105,10 +105,8 @@ class TapestryNode implements ITapestryNode
         $this->popup = null;
 
         if (TapestryHelpers::isValidTapestryNode($this->nodeMetaId)) {
-            if(!$neptuneLoad){
-                $node = $this->_loadFromDatabase();
-                $this->set($node);
-            }
+            $node = $this->_loadFromDatabase();
+            $this->set($node);
             $this->author = $this->_getAuthorInfo(get_post_field('post_author', $this->nodePostId));
         }
     }
@@ -119,7 +117,7 @@ class TapestryNode implements ITapestryNode
      * @return object $node
      */
     public function save()
-    {   
+    {
         return $this->_saveToDatabase();
     }
 
@@ -653,5 +651,4 @@ class TapestryNode implements ITapestryNode
             ];
         }
     }
-
 }

@@ -59,7 +59,7 @@ class NeptuneHelpers
     /**
     * Make a HTTP DELETE request to Neptune APIs.
     *
-    * @param string $url Request URL 
+    * @param string $url Request URL
     *
     * @param object $data POST request object
     *
@@ -80,63 +80,57 @@ class NeptuneHelpers
     }
 
     /**
-     * Convert array of node IDs from string IDs to int IDs (MUTATES the original array)
-     * 
-     * @param $nodes Array of node IDs
-     */
-
-    public static function convertNodesToInt(&$nodes){
-        for($i = 0; $i<count($nodes); $i++){
-            $nodes[$i] = intval($nodes[$i]);
-        }
-    }
-
-    /**
      * Convert array of links from string IDs to int IDs (MUTATES the original array)
-     * 
-     * @param $links Array of node IDs
+     *
+     * @param array $links Array of node IDs
      */
 
-    public static function convertLinksToInt(&$links){
-        for($i = 0; $i<count($links); $i++){
+    public static function convertLinkAttributesToInt(&$links)
+    {
+        for ($i = 0; $i<count($links); $i++) {
             $links[$i]->source = intval($links[$i]->source);
             $links[$i]->target = intval($links[$i]->target);
         }
     }
 
     /**
-     * Converts array that maps postId (string) -> postId (string) to postId (string) -> postId (int)
-     * 
-     * @param $links Array of node IDs
+     * Converts $tapestry->nodes from object to array with each nodeId (int) mapped to the node object (object)
+     * with each object formatted to be used by other classes. For e.g. base64 is converted back to original form
+     *
+     * @param object $nodeObjects Object mapping nodeId to nodeObjects
+     * @param integer $tapestryPostId Post Id of the tapestry
+     *
+     * @return array $nodeArray Array of nodes as specified above
      */
 
-    public static function convertPostIdsToInt($postIds){
-        $intArray = [];
-        foreach($postIds as $key=>$value){
-            $intArray[$key] = intval($value);
-        }
-        return $intArray;
-    }
-
-    
-    public static function convertObjectsToArr($nodeObjects,$tapestryPostId){
+    public static function convertObjectsToArr($nodeObjects, $tapestryPostId)
+    {
         $nodeArray = [];
-        foreach($nodeObjects as $key=>$value){
-            self::sanitizeNodeObject($value,$key);
-            //$node = new TapestryNode($tapestryPostId,intval($key),true);
-            //$node->set($value);
+        foreach ($nodeObjects as $key=>$value) {
+            self::sanitizeNodeObject($value, $key);
             $nodeArray[intval($key)] = $value;
         }
         return $nodeArray;
     }
 
-    public static function getRolesAsString($userId){
-        $user = get_userdata($userId);
 
+    /**
+     * Gets the current user's roles, encodes them to JSON and then base64
+     *
+     * @param integer $userId Id of the current user
+     *
+     * @return string base64 encoded roles
+     */
+
+    public static function getRolesAsString($userId)
+    {
+        $user = get_userdata($userId);
         return base64_encode(json_encode($user->roles));
     }
 
-    private static function sanitizeNodeObject(&$object,$key){
+    private static function sanitizeNodeObject(&$object, $key)
+    {
+        // valueMap in Gremlin returns values as an array and hence the indexing in several attributes
         $object->id = intval($key);
         $object->fitWindow = $object->fitWindow[0] == 'true';
         $object->lockedImageURL = $object->lockedImageURL[0];
@@ -177,8 +171,6 @@ class NeptuneHelpers
         $object->typeData = new stdClass();
         $object->childOrdering = array_map(function ($n) {
             return intval($n);
-        },json_decode(base64_decode($object->childOrdering[0])));
+        }, json_decode(base64_decode($object->childOrdering[0])));
     }
-
-
 }

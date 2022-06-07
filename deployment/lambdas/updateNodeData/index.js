@@ -1,10 +1,15 @@
-/*
-*   Request Type: POST
-*   Request Body: {
-*       id: required (format node-x where x is the metaId of the node)
-*       ... the attributes being updated
-*   }
-*/
+/**
+ * The following is the Lambda function set-up for the Gremlin-Lambda combination,
+ * as recommended by AWS Documentation: https://docs.aws.amazon.com/neptune/latest/userguide/lambda-functions-examples.html
+ * All changes involving interaction with gremlin should be done in the query async method.
+ */
+
+/**
+ * POST Request
+ * Required in request body:
+ * - Any property to be added/updated in the tapestry_node including conditions and permissions
+ *   in base64
+ */
 
 const gremlin = require('gremlin');
 const async = require('async');
@@ -26,14 +31,17 @@ async function query(request) {
       var properties = Object.keys(request);
       for(var i in properties){
         if(properties[i] != "id"){
+            // Forming query to update nodes. The keyword single ensures the cardinality of the properties to remain single
             query = query + `.property(single,\'${properties[i]}\',\'${request[properties[i]]}\')`;
         }    
       }
       query = query + '.next()';
       var promises = [eval(query)];
       if(request.permissions)
+        // Updating permissions
         promises.push(updatePermissions(request));
       if(request.conditions)  
+        // Updating Conditions
         promises.push(updateConditions(request));
       return Promise.all(promises);
   }
@@ -60,10 +68,13 @@ async function updatePermissions(request){
     }
     if(usersAndRoles[i].startsWith('user')){
       var userId = usersAndRoles[i].substring(5);
+        // Create user if it does not exist
         await g.V().hasLabel('user').has('userId',userId).count().choose(__.is(0),__.addV('user').property('userId',userId),__.V().hasLabel('user').has('userId',userId))
         .outE('user_data').where(__.inV().id().is(request.id)).count()
+        // Create user_data edge if it does not exist and selects it
         .choose(__.is(0),__.addE('user_data').from_(__.V().hasLabel('user').has('userId',userId)).to(__.V(request.id)).property('percent_completed','0.0'),
         __.V(request.id).inE('user_data').where(__.outV().has('userId',userId)))
+        // Add properties
         .property('can_edit', can_edit.toString()).property('can_add',can_add.toString())
         .property('can_view',can_view.toString()).property('tapestry_id',request.tapestry_id).next();
     }
@@ -116,6 +127,7 @@ async function updateConditions(request){
   return;
 }
 
+// Converts any time zone's time to a common UNIX timestamp to check if a condition is fulfilled
 function convertToUnixTimestamp(date,time,timeZone){
   var dateString = `${date} ${time}`;
   var dateUTC = new Date(dateString);

@@ -1,10 +1,16 @@
+/**
+ * The following is the Lambda function set-up for the Gremlin-Lambda combination,
+ * as recommended by AWS Documentation: https://docs.aws.amazon.com/neptune/latest/userguide/lambda-functions-examples.html
+ * All changes involving interaction with gremlin should be done in the query async method.
+ */
+
 /*
-* Request Type: POST
-* Request Body {
-*   from - id of source node (format - node-x where x is the node ID) 
-*   to - id of target node (format - node-x where x is the node ID)
-* }
+* POST Request
+* Required in request body:
+* - from: Node id of source node, formatted as "node-x" where x is the node->id
+* - to: Node id of target node, formatted as "node-x" where x is the node->id
 */
+
 const gremlin = require('gremlin');
 const async = require('async');
 const {getUrlAndHeaders} = require('gremlin-aws-sigv4/lib/utils');

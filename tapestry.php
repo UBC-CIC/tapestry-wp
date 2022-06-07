@@ -135,7 +135,7 @@ function tapestry_enqueue_vue_app()
         global $TAPESTRY_VERSION_NUMBER;
         global $TAPESTRY_USE_DEV_MODE;
 
-		$use_dev = $TAPESTRY_USE_DEV_MODE || isset($_GET['debug']);
+        $use_dev = $TAPESTRY_USE_DEV_MODE || isset($_GET['debug']);
 
         // register the Vue build script.
         $vueUrl = $use_dev ? 'http://localhost:8080/dist' : plugin_dir_url(__FILE__).'templates/vue/dist';
@@ -336,13 +336,14 @@ function tapestry_tool_log_event()
 // Code for AWS Neptune - Adds a user node in the graph database if it doesn't already exist,
 // also adds has_role edges to the role nodes corresponding to the roles the user has
 
-add_action('wp_login','loginTapestry',10,2);
+add_action('wp_login', 'loginTapestry', 10, 2);
 
-function loginTapestry($username,$user){
+function loginTapestry($username, $user)
+{
     $data = array(
         'id' => strval($user->ID),
         'roles' => $user->roles
     );
-    $response = NeptuneHelpers::httpPost("addUser",$data);
+    $response = NeptuneHelpers::httpPost("addUser", $data);
     error_log($response);
 }

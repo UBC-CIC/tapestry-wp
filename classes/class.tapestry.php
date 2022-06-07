@@ -53,12 +53,12 @@ class Tapestry implements ITapestry
         $this->settings = $this->_getDefaultSettings();
 
         if (TapestryHelpers::isValidTapestry($this->postId)) {
-            if($tapestryData)
+            if ($tapestryData) {
                 $this->set($tapestryData);
-            else{
+            } else {
                 $tapestry = $this->_loadFromDatabase();
                 $this->set($tapestry);
-            }      
+            }
         }
     }
 
@@ -77,16 +77,16 @@ class Tapestry implements ITapestry
 
     /**
      * Save tapestry settings on the relational database
-     * 
+     *
      * @return object $settings
      */
 
-     public function saveSettings()
-     {
+    public function saveSettings()
+    {
         update_post_meta($this->postId, 'tapestry_settings', $this->settings);
         error_log("Updated Tapestry Settings!");
         return $this->setiings;
-     }
+    }
 
     /**
      * Set Tapestry.
@@ -119,10 +119,11 @@ class Tapestry implements ITapestry
                 $this->settings->submitNodesEnabled = true;
             }
         }
-        if (isset($tapestry->dataPostIds)){
+        if (isset($tapestry->dataPostIds)) {
             $this->dataPostIds = $tapestry->dataPostIds;
         }
-        if(isset($tapestry->userProgress)){
+        // userProgress is now returned from Neptune
+        if (isset($tapestry->userProgress)) {
             $this->userProgress = (array) $tapestry->userProgress;
         }
     }
@@ -134,7 +135,6 @@ class Tapestry implements ITapestry
      */
     public function get($filterUserId = -1)
     {
-
         if (!$this->postId) {
             throw new TapestryError('INVALID_POST_ID');
         }
@@ -190,6 +190,7 @@ class Tapestry implements ITapestry
         $tapestryNode->set($node);
         $node = $tapestryNode->save($node);
 
+        // Neptune portion of the function
 
         if (empty($this->rootId)) {
             $this->rootId = $node->id;
@@ -242,6 +243,9 @@ class Tapestry implements ITapestry
     public function addLink($link)
     {
         array_push($this->links, $link);
+
+        // Neptune portion of the function
+
         $this->addLinkInNeptune($link);
         return $link;
     }
@@ -262,6 +266,9 @@ class Tapestry implements ITapestry
                 break;
             }
         }
+
+        // Neptune portion of the function
+
         $this->reverseLinkInNeptune($newLink);
         return $this->links;
     }
@@ -281,6 +288,9 @@ class Tapestry implements ITapestry
                 break;
             }
         }
+
+        // Neptune portion of the function
+
         $this->deleteLinkInNeptune($linkToDelete);
         return $this->links;
     }
@@ -338,64 +348,6 @@ class Tapestry implements ITapestry
         return empty($this->rootId);
     }
 
-    public function getNodesDataForRender()
-    {
-        $nodesData = [];
-
-        foreach ($this->nodeObjects as $i => $nodeObject) {
-            $nodeId = $nodeObject->getId();
-
-            $nodesData[$nodeId] = new stdClass();
-            $nodesData[$nodeId]->id = $nodeId;
-            $nodesData[$nodeId]->accessible = true;
-            $nodesData[$nodeId]->permitted = false;
-            $nodesData[$nodeId]->unlocked = !$nodeObject->isLocked();
-            $nodesData[$nodeId]->conditions = $nodeObject->getLockedState();
-        }
-        if (count($nodesData)) {
-            // First set nodes accessible according to their unlocked status
-            // Since we are doing a non-bidirectional traversal, we have to loop through all the
-            // nodes (unless they have already been visited)
-            // Efficiency: N^2
-            $traversedNodeIds = [];
-            foreach ($nodesData as $node) {
-                if ($node->unlocked && !in_array($node->id, $traversedNodeIds)) {
-                    $this->_traverseNodesAndApplyFunction($nodesData, $node, false,
-                        function ($n) {
-                            $n->accessible = $n->unlocked;
-                        },
-                        function ($n) {
-                            return $n->unlocked;
-                        }
-                    );
-                    $traversedNodeIds = array_merge($traversedNodeIds, $this->visitedNodeIds);
-                }
-            }
-
-            // Finally we get the remainder of the node data
-            // Here we only return node metadata if not accessible (unless user is an editor)
-            // Efficiency: N
-            $user = new TapestryUser();
-            $nodesData = array_map(
-                function ($nodeAccessibleData) use ($user) {
-                    $nodeId = $nodeAccessibleData->id;
-
-                    $data = $user->canEdit($this->postId) || $nodeAccessibleData->accessible ? $this->nodeObjects[$nodeId]->get() : $this->nodeObjects[$nodeId]->getMeta();
-
-                    $data->accessible = $nodeAccessibleData->accessible;
-                    $data->conditions = $nodeAccessibleData->conditions;
-                    $data->unlocked = $nodeAccessibleData->unlocked;
-
-                    return $data;
-                },
-                $nodesData
-            );
-
-            $nodesData = $this->_addH5PMeta($nodesData);
-        }
-
-        return $nodesData;
-    }
 
     public function getAllContributors()
     {
@@ -444,75 +396,9 @@ class Tapestry implements ITapestry
         ];
     }
 
-    /**
-     * Traverses through the nodes in one direction or bi-directioanlly and applies
-     * the given function to each node. Notes:
-     * - Nodes needs to be an array of objects, each object representing a node (at least with an id)
-     * - Not all nodes may get traversed if it's not a bi-directional traversal
-     * - Non-accessible (locked) nodes and their children do not get traversed
-     * - $func is the function to run takes a single parameter for node
-     * - $condition is the evaluation function needed to move further and it also takes a single
-     *    parameter for node (must return a truthy value).
-     */
-    private function _traverseNodesAndApplyFunction($nodes, $startingNode, $bidirectional, $func, $condition)
-    {
-        $this->visitedNodeIds = [];
-
-        return $this->_recursivelyTraverseNodes($nodes, $startingNode, $bidirectional, $func, $condition);
-    }
-
-    private function _recursivelyTraverseNodes($nodes, $startingNode, $bidirectional, $func, $condition)
-    {
-        $node = $startingNode;
-        if (!isset($node)) {
-            return;
-        }
-        if (!in_array($node->id, $this->visitedNodeIds)) {
-            array_push($this->visitedNodeIds, $node->id);
-        }
-
-        $func($node, $nodes);
-
-        if ($condition($node)) {
-            $neighbourIds = $this->_getNeighbours($node, $bidirectional ? 'both' : 'source');
-
-            $neighbours = [];
-            foreach ($neighbourIds as $neighbourNodeId) {
-                foreach ($nodes as $otherNode) {
-                    if ($otherNode->id === $neighbourNodeId) {
-                        array_push($neighbours, $otherNode);
-                    }
-                }
-            }
-
-            foreach ($neighbours as $neighbour) {
-                if (!in_array($neighbour->id, $this->visitedNodeIds)) {
-                    $this->_recursivelyTraverseNodes($nodes, $neighbour, $bidirectional, $func, $condition);
-                }
-            }
-        }
-    }
-
-    private function _getNeighbours($node, $from = 'both')
-    {
-        $neighbourIds = [];
-
-        foreach ($this->links as $link) {
-            if ((in_array($from, ['both', 'source']) && $link->source === $node->id) ||
-                (in_array($from, ['both', 'target']) && $link->target === $node->id)) {
-                array_push(
-                    $neighbourIds,
-                    $link->source === $node->id ? $link->target : $link->source
-                );
-            }
-        }
-
-        return $neighbourIds;
-    }
-
     private function _loadFromDatabase()
     {
-        $tapestry = $this->getTapestryFromNeptune(); 
+        $tapestry = $this->getTapestryFromNeptune();
         $settings = get_post_meta($this->postId, 'tapestry_settings', true);
         $tapestry->settings = $settings;
         if (empty($tapestry)) {
@@ -590,7 +476,6 @@ class Tapestry implements ITapestry
         // Get all the nodes from the database (we will need this info and only want to do it once)
         $tapestry = $this->_formTapestry();
         $tapestry->nodes = $this->_addH5PMeta($tapestry->nodes);
-        $start = microtime(true);
         // $tapestry->groups = array_map(
         //     function ($groupMetaId) {
         //         $tapestryGroup = new TapestryGroup($this->postId, $groupMetaId);
@@ -599,35 +484,11 @@ class Tapestry implements ITapestry
         //     },
         //     $tapestry->groups
         // );
-
         $userProgress = new TapestryUserProgress($this->postId);
-        $tapestry->userProgress = $userProgress->get($tapestry); 
-        error_log(json_encode($tapestry->userProgress));
+        $tapestry->userProgress = $userProgress->get($tapestry);
         return $tapestry;
     }
 
-    private function _filterTapestry($tapestry, $filterUserId)
-    {
-        $tapestry->nodes = $this->_filterNodesMetaIdsByAccess();
-        $tapestry->links = $this->_filterLinksByNodeMetaIds($tapestry->links, $tapestry->nodes);
-
-        return $tapestry;
-    }
-
-    private function _filterLinksByNodeMetaIds($links, $nodeMetaIds)
-    {
-        $newLinks = [];
-
-        foreach ($links as $link) {
-            if ((in_array($link->source, $nodeMetaIds))
-                && (in_array($link->target, $nodeMetaIds))
-            ) {
-                array_push($newLinks, $link);
-            }
-        }
-
-        return $newLinks;
-    }
 
     private function _addH5PMeta($nodes)
     {
@@ -649,96 +510,30 @@ class Tapestry implements ITapestry
         return $nodes;
     }
 
-    private function _filterNodesMetaIdsByAccess()
-    {
-        $currentUser = new TapestryUser();
-        $currentUserId = $currentUser->getID();
-
-        // First filter by node status
-
-        if (!isset($this->settings->showRejected)) {
-            $this->settings->showRejected = false;
-        }
-
-        $nodes = [];
-        foreach ($this->nodeObjects as $node) {
-            $nodeId = $node->getId();
-            $nodeMeta = $node->getMeta();
-            // draft nodes should only be visible to node authors
-            // the exception is that the node is submitted in which case it should also be viewable to reviewers
-            if (NodeStatus::DRAFT == $nodeMeta->status) {
-                if ($nodeMeta->author->id == $currentUserId) {
-                    array_push($nodes, $nodeId);
-                } elseif ((NodeStatus::SUBMIT == $nodeMeta->reviewStatus || (NodeStatus::REJECT == $nodeMeta->reviewStatus && $this->settings->showRejected)) && $currentUser->canEdit($this->postId)) {
-                    array_push($nodes, $nodeId);
-                }
-            } else {
-                array_push($nodes, $nodeId);
-            }
-        }
-
-        // Then filter by access (i.e. node-level permissions)
-
-        if (!isset($this->settings->superuserOverridePermissions)) {
-            $this->settings->superuserOverridePermissions = true;
-        }
-
-        $superuserOverridePermissions = $this->settings->superuserOverridePermissions;
-
-        if (!$currentUser->canEdit($this->postId) || !$superuserOverridePermissions) {
-            $nodesPermitted = [];
-            foreach ($nodes as $nodeId) {
-                $nodesPermitted[$nodeId] = new stdClass();
-                $nodesPermitted[$nodeId]->id = $nodeId;
-                $nodesPermitted[$nodeId]->permitted = false;
-            }
-
-            $this->_traverseNodesAndApplyFunction($nodesPermitted, $nodesPermitted[$this->rootId], false,
-                function ($n) use ($superuserOverridePermissions, $currentUserId, $filterUserId) {
-                    $n->permitted = $this->_userIsAllowed($n->id, $superuserOverridePermissions, $currentUserId) ||
-                    (-1 !== $filterUserId && $this->_userIsAllowed($n->id, $superuserOverridePermissions, $filterUserId));
-                }, function ($n) {
-                    return true;
-                }
-            );
-
-            $nodes = array_filter($nodes, function ($nodeId) use ($nodesPermitted) {
-                return $nodesPermitted[$nodeId]->permitted;
-            });
-        }
-
-        return $nodes;
-    }
-
-    private function _userIsAllowed($node, $superuser_override, $userId)
-    {
-        return TapestryHelpers::userIsAllowed('READ', $node, $this->postId, $superuser_override, $userId)
-        || TapestryHelpers::userIsAllowed('ADD', $node, $this->postId, $superuser_override, $userId)
-        || TapestryHelpers::userIsAllowed('EDIT', $node, $this->postId, $superuser_override, $userId);
-    }
-
     // Neptune Functions
 
     // POST Requests
 
-    private function addTapestryInNeptune(){
+    private function addTapestryInNeptune()
+    {
         $data = array(
             'id' => strval($this->postId),
             'author' => $this->author,
             'rootId' => "node-" . strval($this->rootId)
         );
-        $response = NeptuneHelpers::httpPost("addTapestry",$data);
+        $response = NeptuneHelpers::httpPost("addTapestry", $data);
         error_log("Add Tapestry");
         error_log($response);
     }
 
-    private function addNodeInNeptune($node){
+    private function addNodeInNeptune($node)
+    {
         $nodeData = array();
         // Listing the keys to avoid sending to graph database
         $keyExclusion = array("id","postId","author","title","coordinates","typeData","permissions","license","mapCoordinates",
-        "conditions","childOrdering","reviewComments","description"); 
-        foreach($node as $key => $value){
-            if(!in_array($key,$keyExclusion)){
+        "conditions","childOrdering","reviewComments","description");
+        foreach ($node as $key => $value) {
+            if (!in_array($key, $keyExclusion)) {
                 $nodeData[$key] = $value;
             }
         }
@@ -761,58 +556,64 @@ class Tapestry implements ITapestry
             'childOrdering' => base64_encode(json_encode($node->childOrdering)),
             'nodeData' => $nodeData
         );
-        $response = NeptuneHelpers::httpPost("addNode",$data);
+        $response = NeptuneHelpers::httpPost("addNode", $data);
         error_log("Add Node");
         error_log($response);
     }
 
-    private function addLinkInNeptune($link){
+    private function addLinkInNeptune($link)
+    {
         $data = array(
             'from' => "node-" . $link->source,
             'to' => "node-" . $link->target
         );
-        $response = NeptuneHelpers::httpPost("addEdge",$data);
+        $response = NeptuneHelpers::httpPost("addEdge", $data);
         error_log("Add Link");
         error_log($response);
     }
 
-    private function reverseLinkInNeptune($link){
+    private function reverseLinkInNeptune($link)
+    {
         $data = array(
             'from' => "node-" . $link->source,
             'to' => "node-" . $link->target
         );
-        $response = NeptuneHelpers::httpPost("reverseEdge",$data);
+        $response = NeptuneHelpers::httpPost("reverseEdge", $data);
         error_log("Reverse Link");
         error_log($response);
     }
 
     // DELETE Requests
 
-    private function deleteLinkInNeptune($link){
+    private function deleteLinkInNeptune($link)
+    {
         $response = NeptuneHelpers::httpDelete("deleteEdge?from=node-" . $link->source . "&to=node-" . $link->target);
         error_log($response);
     }
 
-    private function deleteNodeInNeptune($nodeId){
+    private function deleteNodeInNeptune($nodeId)
+    {
         $response = NeptuneHelpers::httpDelete("deleteVertex?id=node-" . strval($nodeId));
         error_log($response);
     }
 
-    private function deleteTapestryInNeptune(){
+    private function deleteTapestryInNeptune()
+    {
         $response = NeptuneHelpers::httpDelete("deleteVertex?id=" . strval($this->postId));
         error_log($response);
     }
 
     // GET Requests
 
-    private function getTapestryFromNeptune(){
-        $response = NeptuneHelpers::httpGet("getTapestryNodes?id=" . strval($this->postId) . "&userId=" . strval(get_current_user_id()) 
+    private function getTapestryFromNeptune()
+    {
+        $response = NeptuneHelpers::httpGet("getTapestryNodes?id=" . strval($this->postId) . "&userId=" . strval(get_current_user_id())
         . "&roles=" . NeptuneHelpers::getRolesAsString(get_current_user_id()));
         $tapestry = json_decode($response);
         $tapestry->rootId = intval($tapestry->rootId);
-        NeptuneHelpers::convertLinksToInt($tapestry->links);
-        $tapestry->nodes = NeptuneHelpers::convertObjectsToArr($tapestry->nodes,$this->postId);
+        NeptuneHelpers::convertLinkAttributesToInt($tapestry->links);
+        // Converting $tapestry->nodes from an object to an array with formatted nodeObjects
+        $tapestry->nodes = NeptuneHelpers::convertObjectsToArr($tapestry->nodes, $this->postId);
         return $tapestry;
     }
-
 }

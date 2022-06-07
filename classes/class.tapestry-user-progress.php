@@ -204,10 +204,10 @@ class TapestryUserProgress implements ITapestryUserProgress
             'nodeId' => 'node-' . $this->nodeMetaId,
             'userId' => strval($this->_userId),
             'progressValue' => $progressValue == 1? '1.0' : strval($progressValue), // need the progressValue to be exactly '1.0'
-            'tapestryId' => strval($this->postId) 
+            'tapestryId' => strval($this->postId)
         );
         error_log(json_encode($data));
-        $response = NeptuneHelpers::httpPost("updateUserProgress",$data);
+        $response = NeptuneHelpers::httpPost("updateUserProgress", $data);
         error_log($response);
     }
 
@@ -241,6 +241,8 @@ class TapestryUserProgress implements ITapestryUserProgress
         foreach ($nodes as $node) {
             $nodeId = $node->id;
             $userId = $this->_userId;
+            /* Formatting $tapestry->userProgress which was returned from Neptune (no longer getting it from
+            relational database) */
             $prevProgress = (array) $tapestry->userProgress;
             $progress_value = $prevProgress[$nodeId]->progress;
             $progress->$nodeId = new stdClass();

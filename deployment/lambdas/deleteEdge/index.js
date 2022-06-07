@@ -1,9 +1,16 @@
-/*
-*   Request Type: DELETE
-*   Required Query String Parameters:-
-*   'to' - The id of the target of the link to be deleted
-*   'from' - The id of the source of the link to be deleted
-*/
+/**
+ * The following is the Lambda function set-up for the Gremlin-Lambda combination,
+ * as recommended by AWS Documentation: https://docs.aws.amazon.com/neptune/latest/userguide/lambda-functions-examples.html
+ * All changes involving interaction with gremlin should be done in the query async method.
+ */
+
+
+/**
+ * DELETE Request
+ * Required in request query string parameters:
+ * - from: id of the source node of the edge to delete, formatted as "node-x" where x is node->id
+ * - to: id of the target node of the edge to delete, formatted as "node-x" where x is node->id
+ */
 
 const gremlin = require('gremlin');
 const async = require('async');
@@ -19,6 +26,7 @@ let g = null;
 
 async function query(from,to) {
   if(from != undefined && to != undefined){
+      // Deletes the edge
       return g.V(from).outE('connected_to').where(__.inV().has(t.id,to)).drop().next();
   }
 }

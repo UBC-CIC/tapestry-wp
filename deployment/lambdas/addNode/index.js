@@ -1,15 +1,17 @@
-/*
-*   Request Type: POST
-*   Request Body: {
-*       id: required (format node-x where x is the metaId of the node)
-*       tapestry_id: required
-*       user_id: required
-*       title: required
-*       coordinates_x: required    
-*       coordinates_y: required
-*   }
-*   
-*/
+/**
+ * The following is the Lambda function set-up for the Gremlin-Lambda combination,
+ * as recommended by AWS Documentation: https://docs.aws.amazon.com/neptune/latest/userguide/lambda-functions-examples.html
+ * All changes involving interaction with gremlin should be done in the query async method.
+ */
+
+/**
+ * POST Request
+ * Required in request body:
+ * - id: Node id, formatted as "node-x" where x is the node->id
+ * - tapestry_id: Tapestry post id as string
+ * - title: Node title
+ * - All other node contents excluding typeData, reviewComments, license, references, popup
+ */
 
 const gremlin = require('gremlin');
 const async = require('async');
@@ -24,9 +26,9 @@ let conn = null;
 let g = null;
 
 async function query(request) {
-  console.log(request);
-  if(request.id != undefined && request.tapestry_id != undefined && request.title != undefined && request.coordinates_x != undefined && request.coordinates_y != undefined){
-      // add node
+  if(request.id != undefined && request.tapestry_id != undefined && request.title != undefined){
+      // add node and contains edge from tapestry node to the newly created node
+      // forming the query without executing it just yet
       var query =  `g.addE(\'contains\').from_(__.V(request.tapestry_id))
       .to(__.addV(\'tapestry_node\').property(t.id,request.id).property(\'title\',request.title)
       .property(\'coordinates_x\',request.coordinates_x).property(\'coordinates_y\',request.coordinates_y).property(\'data_post_id\',request.data_post_id)
@@ -36,14 +38,16 @@ async function query(request) {
       if(nodeData){
         var properties = Object.keys(nodeData);
         for(var i in properties){
+          // adding all other properties to the node
           query = query + `.property(\'${properties[i]}\',\'${nodeData[properties[i]]}\')`;
         }  
       }
+      // Mark contains edge as root if the node is root node
       query = query+').choose(__.V(request.tapestry_id).values(\'rootId\').is(request.id),__.property(\'root\',\'true\'),__.property(\'root\',\'false\')).next()';
-      console.log(query);
       var propertiesAdded = await eval(query);
       // add user_data edge
       var userSync = await addPermissions(request);
+      // add conditions if any
       var conditionSync = addConditions(request); 
       return Promise.all([propertiesAdded,userSync,conditionSync]);
   }
@@ -69,14 +73,19 @@ async function addPermissions(request){
       }
     if(usersAndRoles[i].startsWith('user')){
       var userId = usersAndRoles[i].substring(5);
+        // Add a user_data edge to the node from the user's node. If the user node doesn't exist, create it.
         await g.addE('user_data').from_(__.V().hasLabel('user').has('userId',userId).count().choose(__.is(0),__.addV('user').property('userId',userId),__.V().hasLabel('user').has('userId',userId)))
         .to(__.V(request.id))
+        // Add properties to the user_data edge
         .property('percent_completed','0.0').property('can_edit', can_edit.toString()).property('can_add',can_add.toString())
         .property('can_view',can_view.toString()).property('tapestry_id',request.tapestry_id).next();
     } else {
-      var role = usersAndRoles[i];
-      await g.addE('role_has_permissions').from_(__.V().hasLabel('role').has('name',role).count().choose(__.is(0),__.addV('role').property('name',role),__.V().hasLabel('role').has('name',role)))
-        .to(__.V(request.id)).property('can_edit', can_edit.toString()).property('can_add',can_add.toString())
+      var role = usersAndRoles[i]; 
+        // Add a role_has_permissions edge to the node from the role's node. If the role's node doesn't exist, create it. 
+        await g.addE('role_has_permissions').from_(__.V().hasLabel('role').has('name',role).count().choose(__.is(0),__.addV('role').property('name',role),__.V().hasLabel('role').has('name',role)))
+        .to(__.V(request.id))
+        // Add properties to the role_has_permissions edge
+        .property('can_edit', can_edit.toString()).property('can_add',can_add.toString())
         .property('can_view',can_view.toString()).property('tapestry_id',request.tapestry_id).next();
     }
   }
@@ -111,6 +120,7 @@ async function addConditions(request){
   return;
 }
 
+// Converts any time zone's time to a common UNIX timestamp to check if a condition is fulfilled
 function convertToUnixTimestamp(date,time,timeZone){
   var dateString = `${date} ${time}`;
   var dateUTC = new Date(dateString);

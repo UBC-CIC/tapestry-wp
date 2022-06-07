@@ -335,7 +335,7 @@ foreach ($REST_API_ENDPOINTS as $ENDPOINT) {
             register_rest_route(
                 $REST_API_NAMESPACE,
                 $ENDPOINT->ROUTE,
-                array_merge(array('permission_callback' => '__return_true') ,$ENDPOINT->ARGUMENTS)
+                array_merge(array('permission_callback' => '__return_true'), $ENDPOINT->ARGUMENTS)
             );
         }
     );
@@ -728,7 +728,7 @@ function reverseTapestryLink($request)
         if ($postId && !TapestryHelpers::isValidTapestry($postId)) {
             throw new TapestryError('INVALID_POST_ID');
         }
-        if (!TapestryHelpers::userIsAllowed('ADD', $newLink->source, $postId) 
+        if (!TapestryHelpers::userIsAllowed('ADD', $newLink->source, $postId)
             || !TapestryHelpers::userIsAllowed('ADD', $newLink->target, $postId)) {
             throw new TapestryError('ADD_LINK_PERMISSION_DENIED');
         }
@@ -833,7 +833,7 @@ function updateTapestryNode($request)
         
         $node->set((object) $nodeData);
 
-        if($nodeData->mediaType == null){
+        if ($nodeData->mediaType == null) {
             return $node->get();
         }
 
@@ -868,7 +868,7 @@ function updateTapestryNode($request)
             "fitWindow" => $nodeData->fitWindow?"true":"false",
             "childOrdering" => base64_encode(json_encode($nodeData->childOrdering))
         );
-        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
+        $response = NeptuneHelpers::httpPost("updateNodeData", $data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -948,7 +948,7 @@ function updateTapestryNodeSize($request)
             "id" => "node-" . $nodeMetaId,
             "size" => strval($size),
         );
-        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
+        $response = NeptuneHelpers::httpPost("updateNodeData", $data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -992,7 +992,7 @@ function updateTapestryNodeDescription($request)
             "id" => "node-" . $nodeMetaId,
             "description" => $description,
         );
-        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
+        $response = NeptuneHelpers::httpPost("updateNodeData", $data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -1036,7 +1036,7 @@ function updateTapestryNodeTitle($request)
             "id" => "node-" . $nodeMetaId,
             "title" => $title,
         );
-        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
+        $response = NeptuneHelpers::httpPost("updateNodeData", $data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -1080,7 +1080,7 @@ function updateTapestryNodeImageURL($request)
             "id" => "node-" . $nodeMetaId,
             "imageURL" => $imageURL,
         );
-        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
+        $response = NeptuneHelpers::httpPost("updateNodeData", $data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -1123,7 +1123,7 @@ function updateTapestryNodeLockedImageURL($request)
             "id" => "node-" . $nodeMetaId,
             "lockedImageURL" => $imageURL,
         );
-        $response = NeptuneHelpers::httpPost("updateNodeData",$data);
+        $response = NeptuneHelpers::httpPost("updateNodeData", $data);
         return $node->save();
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -1158,7 +1158,7 @@ function optimizeTapestryNodeThumbnails($request)
                     "id" => "node-" . $nodeMetaId,
                     "thumbnailFileId" => $attachmentId,
                 );
-                $response = NeptuneHelpers::httpPost("updateNodeData",$data);
+                $response = NeptuneHelpers::httpPost("updateNodeData", $data);
                 $node->save();
             }
             if ($nodeData->lockedImageURL) {
@@ -1170,7 +1170,7 @@ function optimizeTapestryNodeThumbnails($request)
                     "id" => "node-" . $nodeMetaId,
                     "lockedThumbnailFileId" => $attachmentId
                 );
-                $response = NeptuneHelpers::httpPost("updateNodeData",$data);
+                $response = NeptuneHelpers::httpPost("updateNodeData", $data);
                 $node->save();
             }
         }
@@ -1258,7 +1258,7 @@ function updateTapestryNodeCoordinates($request)
             "coordinates_y" => strval($coordinates->y)
         );
 
-        $response = NeptuneHelpers::httpPost("updateNodeData",$data);    
+        $response = NeptuneHelpers::httpPost("updateNodeData", $data);
         $node->set((object) ['coordinates' => $coordinates]);
 
         return $node->save();
@@ -1621,5 +1621,4 @@ function getQuestionHasAnswers($request)
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
     }
-    
 }
