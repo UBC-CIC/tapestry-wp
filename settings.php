@@ -96,6 +96,7 @@ function run_db_commands()
             } else {
                 update_option('api_endpoint', $_POST['api_endpoint']);
             }
+            wp_logout();
         }
     }
 }

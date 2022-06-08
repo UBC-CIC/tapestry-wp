@@ -136,7 +136,7 @@ Resources:
        DBClusterIdentifier: tapestry-neptune-cluster
        DBInstanceClass: db.t3.medium
        DBInstanceIdentifier: tapestry-neptune-instance
-       DBSubnetGroupName: neptune-subnet-group
+       DBSubnetGroupName: neptune-subnet-group 
 
   # Lambda Layer
 
