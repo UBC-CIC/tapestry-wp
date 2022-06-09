@@ -35,7 +35,7 @@ async function query(id,roles) {
         // Create role node if it does not exist and then create a has_role edge to it if it does not exist.  
         g.V().hasLabel('user').has('userId',id).outE('has_role').where(__.inV().has('name',role)).count()
         .choose(__.is(0),__.addE('has_role').from_(__.V().hasLabel('user').has('userId',id)).to(__.V().hasLabel('role').has('name',role).count()
-        .choose(__.is(0),__.addV(role).property('name',role),__.V().hasLabel('role').has('name',role))),
+        .choose(__.is(0),__.addV('role').property('name',role),__.V().hasLabel('role').has('name',role))),
         __.V().hasLabel('user').has('userId',id).outE('has_role').where(__.inV().has('name',role)))
         .next()
       );
