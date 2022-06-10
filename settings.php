@@ -13,8 +13,9 @@ function tapestry_settings_init()
 {
     add_settings_section('tapestry_db_settings', 'Database Settings', 'tapestry_db_section_cb', 'tapestry_settings_page');
     add_settings_field('tapestry_clean_h5p_nodes', 'Clean h5p Nodes', 'tapestry_clean_h5p_nodes_cb', 'tapestry_settings_page', 'tapestry_db_settings');
-    add_settings_section('neptune_db_settings', 'Neptune API Endpoint', 'neptune_section_cb', 'neptune_settings_page');
+    add_settings_section('neptune_db_settings', 'Neptune Settings', 'neptune_section_cb', 'neptune_settings_page');
     add_settings_field('neptune_api_field', 'Neptune API endpoint', 'neptune_field_cb', 'neptune_settings_page', 'neptune_db_settings');
+    add_settings_field('neptune_key_field', 'Neptune API Security Key', 'neptune_key_field_cb', 'neptune_settings_page', 'neptune_db_settings');
 }
 
 function tapestry_settings_page_cb()
@@ -55,11 +56,15 @@ function neptune_field_cb()
     echo "<input type='text' id='api_endpoint' name='api_endpoint' />";
 }
 
+function neptune_key_field_cb()
+{
+    echo "<input type='text' id='security_key' name='security_key' />";
+}
+
 function run_db_commands()
 {
     if (isset($_POST['tapestry_db'])) {
         if (isset($_POST['clean_h5p_nodes'])) {
-            error_log(json_encode(get_option('admin_email')));
             $query_args = array(
                 'post_type' => 'tapestry_node',
                 'meta_query' => array(
@@ -88,15 +93,25 @@ function run_db_commands()
             add_action('admin_notices', 'tapestry_h5p_conf_notice');
         }
     }
-
+    // Executed if the "Submit" button is clicked
     if (isset($_POST['neptune_api_endpoint'])) {
-        if (isset($_POST['api_endpoint'])) {
+        // Executed if API Endpoint specified
+        if (isset($_POST['api_endpoint']) && $_POST['api_endpoint'] != '') {
             if (get_option('api_endpoint') === false) {
                 add_option('api_endpoint', $_POST['api_endpoint']);
             } else {
                 update_option('api_endpoint', $_POST['api_endpoint']);
             }
-            wp_logout();
+            wp_logout();  // Logs the user out to keep track of users on Neptune
+        }
+        // Executed if Security Key specified
+        if (isset($_POST['security_key']) && $_POST['security_key'] != '') {
+            if (get_option('security_key') === false) {
+                add_option('security_key', $_POST['security_key']);
+            } else {
+                update_option('security_key', $_POST['security_key']);
+            }
+            wp_logout();  // Logs the user out to keep track of users on Neptune
         }
     }
 }

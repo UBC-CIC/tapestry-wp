@@ -84,7 +84,6 @@ class Tapestry implements ITapestry
     public function saveSettings()
     {
         update_post_meta($this->postId, 'tapestry_settings', $this->settings);
-        error_log("Updated Tapestry Settings!");
         return $this->setiings;
     }
 
@@ -522,8 +521,6 @@ class Tapestry implements ITapestry
             'rootId' => "node-" . strval($this->rootId)
         );
         $response = NeptuneHelpers::httpPost("addTapestry", $data);
-        error_log("Add Tapestry");
-        error_log($response);
     }
 
     private function addNodeInNeptune($node)
@@ -557,8 +554,6 @@ class Tapestry implements ITapestry
             'nodeData' => $nodeData
         );
         $response = NeptuneHelpers::httpPost("addNode", $data);
-        error_log("Add Node");
-        error_log($response);
     }
 
     private function addLinkInNeptune($link)
@@ -568,8 +563,6 @@ class Tapestry implements ITapestry
             'to' => "node-" . $link->target
         );
         $response = NeptuneHelpers::httpPost("addEdge", $data);
-        error_log("Add Link");
-        error_log($response);
     }
 
     private function reverseLinkInNeptune($link)
@@ -579,8 +572,6 @@ class Tapestry implements ITapestry
             'to' => "node-" . $link->target
         );
         $response = NeptuneHelpers::httpPost("reverseEdge", $data);
-        error_log("Reverse Link");
-        error_log($response);
     }
 
     // DELETE Requests
@@ -588,19 +579,16 @@ class Tapestry implements ITapestry
     private function deleteLinkInNeptune($link)
     {
         $response = NeptuneHelpers::httpDelete("deleteEdge?from=node-" . $link->source . "&to=node-" . $link->target);
-        error_log($response);
     }
 
     private function deleteNodeInNeptune($nodeId)
     {
         $response = NeptuneHelpers::httpDelete("deleteVertex?id=node-" . strval($nodeId));
-        error_log($response);
     }
 
     private function deleteTapestryInNeptune()
     {
         $response = NeptuneHelpers::httpDelete("deleteVertex?id=" . strval($this->postId));
-        error_log($response);
     }
 
     // GET Requests

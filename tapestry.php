@@ -345,5 +345,4 @@ function loginTapestry($username, $user)
         'roles' => $user->roles
     );
     $response = NeptuneHelpers::httpPost("addUser", $data);
-    error_log($response);
 }

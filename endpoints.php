@@ -402,13 +402,11 @@ function getAllH5P()
  */
 function getTapestry($request)
 {
-    $start = microtime(true);
     $postId = $request['tapestryPostId'];
     $filterUserId = $request['filter_user_id'];
     try {
         $tapestry = new Tapestry($postId);
         $data = $tapestry->get($filterUserId);
-        error_log("Time Taken GET: " . (microtime(true)-$start));
         return $data;
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -499,7 +497,6 @@ function importTapestry($postId, $tapestryData)
         $i = 0;
         foreach ($tapestryData->nodes as $node) {
             $i++;
-            error_log("Nodes: " . $i . "/" . $numNodes);
             $node->conditions = []; // Current Neptune implementation of the import feature does not support import of conditions
             $oldNodeId = $node->id;
             $newNode = $tapestry->addNode($node);
@@ -530,7 +527,6 @@ function importTapestry($postId, $tapestryData)
         $i = 0;
         foreach ($tapestryData->links as $link) {
             $i++;
-            error_log("Edges: " . $i . "/" . $numLinks);
             $oldSource = $link->source;
             $oldTarget = $link->target;
 
@@ -562,7 +558,6 @@ function deleteTapestry($request)
  */
 function addTapestryNode($request)
 {
-    $start = microtime(true);
     $postId = $request['tapestryPostId'];
     $node = json_decode($request->get_body());
     // TODO: JSON validations should happen here
@@ -581,7 +576,6 @@ function addTapestryNode($request)
             }
         }
         $retval = $tapestry->addNode($node);
-        error_log("Time Elapsed ADD NODE: " . (microtime(true)-$start));
         return $retval;
     } catch (TapestryError $e) {
         return new WP_Error($e->getCode(), $e->getMessage(), $e->getStatus());
@@ -1322,7 +1316,6 @@ function updateProgressByNodeId($request)
     $nodeMetaId = $request['node_id'];
     $progressValue = $request['progress_value'];
     try {
-        error_log("Updating progress!");
         $userProgress = new TapestryUserProgress($postId, $nodeMetaId);
         $userProgress->updateUserProgress($progressValue);
     } catch (TapestryError $e) {

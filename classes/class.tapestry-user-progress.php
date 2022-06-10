@@ -206,9 +206,7 @@ class TapestryUserProgress implements ITapestryUserProgress
             'progressValue' => $progressValue == 1? '1.0' : strval($progressValue), // need the progressValue to be exactly '1.0'
             'tapestryId' => strval($this->postId)
         );
-        error_log(json_encode($data));
         $response = NeptuneHelpers::httpPost("updateUserProgress", $data);
-        error_log($response);
     }
 
     private function _complete()
