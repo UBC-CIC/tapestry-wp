@@ -1,12 +1,8 @@
-# tapestry-wp
+# tapestry-wp-graphDB
 
 This is a plugin for Wordpress that allows creating non-linear, collaborative, and interactive content. This plugin adds a new post type to Wordpress called "Tapestry" and allows presentation and authoring in the frontend using Vue JS.
 
 Visit [tapestry-tool.com](https://www.tapestry-tool.com) for more info.
-
-## How to install this plugin for Wordpress
-
-You can visit the [releases](https://github.com/wynnset/tapestry-wp/releases) page in this repository and find the plugin zip file under the "Assets" toggle for a given version. Once downloaded, you can upload this zip file to Wordpress under Plugins > Add New > Upload Plugin and activate the plugin.
 
 ## Development
 
@@ -23,6 +19,8 @@ To get started with developing locally:
 - Make sure `$TAPESTRY_USE_DEV_MODE` is set to `TRUE` in `tapestry.php`
 - In the `templates/vue` directory, run `npm start` to serve with hot reload at localhost:8080
 
+**Note:** If `npm install` does not work, try `npm install --legacy-peer-deps`
+
 ### Build & Deployment
 
 To build a new plugin zip file with your local edits:
@@ -32,6 +30,12 @@ To build a new plugin zip file with your local edits:
   - All hidden files in the root directory
   - All files and directories in the `templates/vue` directory except the `dist` folder
 - Zip the `tapestry` folder and upload it in your other Wordpress instance under Plugins > Add New > Upload Plugin
+
+**Note:** If `npm install` does not work, try `npm install --legacy-peer-deps`
+
+### Cloud Resources
+
+This version of Tapestry uses Amazon Neptune as its primary database. So, before beginnig to use this plugin, make sure you provision all cloud resources and configure the plugin to work with them. For instructions on how to do that and details about the cloud infrastructure used by this plugin, visit this [repository](https://github.com/UBC-CIC/Tapestry).
 
 ### Getting external links to work
 
