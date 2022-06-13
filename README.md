@@ -50,3 +50,14 @@ It's strongly recommended you complete this to get link previews working for the
     where `<key>` is the key you generated.
 
 If you complete these steps before running `npm run build`, you will have link previews working.
+
+### Development Tasks Remaining
+
+1. **Loading additional data**: To be fully functional, certain node properties must still be loaded from the relational database in an efficient manner. SInce these properties are required only to view node contents, one efficient way of handling them would be to load them right when a user clicks on a node to view its contents. These properties include:
+   ```bash
+   typeData
+   reviewComments
+   license
+   references
+   ```
+2. **Handle duplication of data in databases**: Currently, all data in the various WordPress tables is still stored in those tables with the same meta_key. For more information about this, refer to this [link](https://github.com/UBC-CIC/Tapestry#relational-database). Ideally, only those properties that are not being stored on the graph database should be stored on the relational database.
