@@ -1,6 +1,6 @@
 # tapestry-wp-graphDB
 
-This is a plugin for Wordpress that allows creating non-linear, collaborative, and interactive content. This plugin adds a new post type to Wordpress called "Tapestry" and allows presentation and authoring in the frontend using Vue JS.
+This is a plugin for Wordpress that allows creating non-linear, collaborative, and interactive content. This plugin adds a new post type to Wordpress called "Tapestry" and allows presentation and authoring in the frontend using Vue JS. This repository is a fork of the [original plugin repository](https://github.com/UBC-CIC/Tapestry) and uses a graph database.
 
 Visit [tapestry-tool.com](https://www.tapestry-tool.com) for more info.
 
@@ -35,7 +35,7 @@ To build a new plugin zip file with your local edits:
 
 ### Cloud Resources
 
-This version of Tapestry uses Amazon Neptune as its primary database. So, before beginnig to use this plugin, make sure you provision all cloud resources and configure the plugin to work with them. For instructions on how to do that and details about the cloud infrastructure used by this plugin, visit this [repository](https://github.com/UBC-CIC/Tapestry).
+This version of Tapestry is enhanced by use of a graph database (Amazon Neptune). So, before beginnig to use this plugin, make sure you provision all cloud resources and configure the plugin to work with them. For instructions on how to do that and details about the cloud infrastructure used by this plugin, visit this [repository](https://github.com/UBC-CIC/Tapestry).
 
 ### Getting external links to work
 
