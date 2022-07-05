@@ -26,7 +26,6 @@ class NeptuneHelpers
         curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'authorization: ' . get_option('security_key')));
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
         $response = curl_exec($curl);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($curl);
         return $response;
     }
@@ -47,7 +46,6 @@ class NeptuneHelpers
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
         $response = curl_exec($curl);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         return $response;
     }
 
